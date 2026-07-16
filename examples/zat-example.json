@@ -1,0 +1,175 @@
+{
+  "iss": "zivis.ai",
+  "sub": "org:acme-corp",
+  "mark_id": "ztm_01HTAB3XKQN8R2PVGW7YCFM6D",
+  "issued_at": "2026-03-02T19:45:00Z",
+  "expires_at": "2026-06-02T19:45:00Z",
+  "frameworks": [
+    {
+      "id": "nist-ir-8596-iprd",
+      "name": "NIST Cybersecurity Framework Profile for Artificial Intelligence",
+      "version": "2025-12-iprd",
+      "basis": "mapped",
+      "scope": [
+        "Secure",
+        "Defend",
+        "Thwart"
+      ],
+      "csf_version": "2.0"
+    }
+  ],
+  "claims": {
+    "z_score_raw": 0.7512843,
+    "z_score_display": 751,
+    "tier": 2,
+    "tier_label": "Operational Trust",
+    "tier_score": 51.28,
+    "coverage_pct": 0.71,
+    "focus_areas": {
+      "GV": 0.82,
+      "ID": 0.71,
+      "PR": 0.68,
+      "DE": 0.55,
+      "RS": 0.6,
+      "RC": 0.45
+    },
+    "target_profile": {
+      "GV": 2,
+      "ID": 2,
+      "PR": 2,
+      "DE": 1,
+      "RS": 1,
+      "RC": 1
+    },
+    "gap_analysis": {
+      "GV": {
+        "current_score": 0.82,
+        "target_tier": 2,
+        "gap": "met"
+      },
+      "ID": {
+        "current_score": 0.71,
+        "target_tier": 2,
+        "gap": "met"
+      },
+      "PR": {
+        "current_score": 0.68,
+        "target_tier": 2,
+        "gap": "partial"
+      },
+      "DE": {
+        "current_score": 0.55,
+        "target_tier": 1,
+        "gap": "not_met"
+      },
+      "RS": {
+        "current_score": 0.6,
+        "target_tier": 1,
+        "gap": "met"
+      },
+      "RC": {
+        "current_score": 0.45,
+        "target_tier": 1,
+        "gap": "not_met"
+      }
+    },
+    "mapped_outcomes": [
+      {
+        "id": "GV.RM-01",
+        "status": "met",
+        "confidence": 0.88,
+        "evidence_refs": [
+          "ev_102",
+          "ev_119"
+        ]
+      },
+      {
+        "id": "GV.RM-02",
+        "status": "met",
+        "confidence": 0.91,
+        "evidence_refs": [
+          "ev_103"
+        ]
+      },
+      {
+        "id": "GV.PO-01",
+        "status": "partial",
+        "confidence": 0.76,
+        "evidence_refs": [
+          "ev_120"
+        ],
+        "notes": "AI policy exists but has not been formally ratified by board"
+      },
+      {
+        "id": "DE.CM-01",
+        "status": "partial",
+        "confidence": 0.74,
+        "evidence_refs": [
+          "ev_212"
+        ],
+        "notes": "Monitoring covers production LLM endpoints but excludes fine-tuning pipeline"
+      },
+      {
+        "id": "DE.AE-01",
+        "status": "not_met",
+        "confidence": 0.95,
+        "evidence_refs": []
+      },
+      {
+        "id": "RS.MI-01",
+        "status": "not_evaluated",
+        "confidence": null,
+        "evidence_refs": []
+      }
+    ]
+  },
+  "evidence_manifest": {
+    "hash_alg": "sha-256",
+    "bundle_hash": "3b4f2c8d9a1e6f7b0c5d8e9f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1",
+    "uri": "https://trust.zivis.ai/marks/ztm_01HTAB3XKQN8R2PVGW7YCFM6D/evidence",
+    "evidence_count": 5,
+    "items": [
+      {
+        "id": "ev_102",
+        "type": "pentest_finding",
+        "hash": "sha256:a1b2c3d4e5f678901234567890abcdef"
+      },
+      {
+        "id": "ev_103",
+        "type": "control_assessment",
+        "hash": "sha256:b2c3d4e5f678901234567890abcdef01"
+      },
+      {
+        "id": "ev_119",
+        "type": "agent_test_run",
+        "hash": "sha256:c3d4e5f678901234567890abcdef0123"
+      },
+      {
+        "id": "ev_120",
+        "type": "policy_document",
+        "hash": "sha256:d4e5f678901234567890abcdef012345"
+      },
+      {
+        "id": "ev_212",
+        "type": "scan_result",
+        "hash": "sha256:e5f678901234567890abcdef01234567"
+      }
+    ]
+  },
+  "methodology": {
+    "zivis_model_version": "os-0.9.3",
+    "scoring_version": "tm-score-2.1",
+    "evaluator": "human+agentic",
+    "assessment_window": {
+      "start": "2026-02-15T00:00:00Z",
+      "end": "2026-03-02T18:00:00Z"
+    }
+  },
+  "sig": {
+    "alg": "ML-DSA-65",
+    "standard": "FIPS-204",
+    "value": "<base64-encoded signature>",
+    "kid": "zivis-signing-key-2026-01",
+    "compact": "zivis.1.eyJ2IjoxLCJoIjoiM2I0ZjJjOGQiLCJpIjoxNzQwOTQzNTAwLCJlIjoxNzQ5NTgzNTAwLCJvIjoiYWNtZSJ9.<base64url-sig>"
+  }
+}
