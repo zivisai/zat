@@ -1,0 +1,58 @@
+{
+  "zat_version": "0.2",
+  "mark_id": "ztm_01K3RQ7X4M2NBV8FYCD5PGWJHT",
+  "iss": "zivis.ai",
+  "disclosures": [
+    {
+      "kind": "outcome",
+      "salt": "b3V0XzAwMV9zYWx0X2V4YW1wbGU",
+      "value": {
+        "id": "GOVERN-1.1",
+        "status": "met",
+        "confidence": 0.91,
+        "evidence_refs": [
+          "ev_2f1a",
+          "ev_c882"
+        ]
+      },
+      "proof": [
+        {
+          "position": "right",
+          "hash": "sha256:9aeded5f9b3f7e5284726c9a1a01668a2c9f594879b8f06a683df81be719d8c0"
+        },
+        {
+          "position": "right",
+          "hash": "sha256:6afbd52ff94f49c0f905a3728c7c010416fc89f4dc2f5a5df8c02fda68bd1ef2"
+        },
+        {
+          "position": "right",
+          "hash": "sha256:f1407b57bdae57b48079d3a1e09e0d4535902a2810716f604d6a763f39d4d2ae"
+        }
+      ]
+    },
+    {
+      "kind": "evidence_item",
+      "salt": "ZXZfMDAxX3NhbHRfZXhhbXBsZQ",
+      "value": {
+        "id": "ev_2f1a",
+        "type": "policy_document",
+        "hash": "sha256:91bce1151b8410b6dc927ff0f956fb7b5dfd5f9ca9b2e581af075684a56949fc",
+        "version": 3
+      },
+      "proof": [
+        {
+          "position": "right",
+          "hash": "sha256:a7c73fa58c73170cdd2552aea70546d1a3e9941d20b7658e5fb8d487f6e3783b"
+        },
+        {
+          "position": "right",
+          "hash": "sha256:2b96189c3cccbc3dc03d44694056b3deb794a4d242c99099c99a0ed45216bf91"
+        },
+        {
+          "position": "right",
+          "hash": "sha256:ee58963d4030fe4a5661fbb95d22b396651c234a709ec6b588f1ae4ad20252d9"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "zat_version": "0.2",
+  "iss": "zivis.ai",
+  "sub": "org:acme-corp",
+  "mark_id": "ztm_01K3RQ7X4M2NBV8FYCD5PGWJHT",
+  "issued_at": "2026-08-17T18:24:00Z",
+  "expires_at": "2026-11-15T18:24:00Z",
+  "frameworks": [
+    {
+      "id": "nist-ai-rmf-1.0",
+      "name": "NIST AI Risk Management Framework 1.0",
+      "version": "1.0",
+      "basis": "tested",
+      "definition_hash": "sha256:bcdbcb9be2423c0f29b4dd1e4b568053c6eae3283aa34204d8f467d72203c377",
+      "scope": [
+        "GOVERN",
+        "MAP",
+        "MEASURE",
+        "MANAGE"
+      ]
+    }
+  ],
+  "claims": {
+    "outcomes_root": "sha256:e69d97176691869bacfd2a688d933e1afb4d31a8572373e2401e30a61a45b6c7",
+    "aggregate": {
+      "scoring_profile": "ai.zivis.z-score-1.0",
+      "profile_uri": "https://github.com/zivisai/zat/blob/main/profiles/zivis-z-score-1.0.md",
+      "score_raw": 0.7460000000000001,
+      "score_display": 746,
+      "tier": 2,
+      "tier_label": "Operational Trust",
+      "tier_score": 46,
+      "coverage_pct": 0.8571428571428571
+    }
+  },
+  "evidence_manifest": {
+    "hash_alg": "sha-256",
+    "bundle_root": "sha256:40d099afb299f51abcb5f9a913f904f5b1b65117c06430aecbe2eb7c893103f7",
+    "uri": "https://trust.zivis.ai/marks/ztm_01K3RQ7X4M2NBV8FYCD5PGWJHT"
+  },
+  "methodology": {
+    "assessor_version": "os-0.9.3",
+    "scoring_version": "tm-score-2.1",
+    "evaluator": "human+agentic",
+    "assessment_window": {
+      "start": "2026-08-03T00:00:00Z",
+      "end": "2026-08-17T17:52:00Z"
+    }
+  },
+  "sig": {
+    "alg": "ML-DSA-65",
+    "standard": "FIPS-204",
+    "value": "<base64 ML-DSA-65 signature over the JCS-canonicalized token minus sig>",
+    "kid": "zivis-mldsa-2026-08",
+    "compact": "zivis.1.<base64url-payload>.<base64url-ed25519-sig>"
+  }
+}
