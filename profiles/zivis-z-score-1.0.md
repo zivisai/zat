@@ -3,7 +3,7 @@
 **Profile identifier:** `ai.zivis.z-score-1.0`
 **Status:** Stable
 **Version:** 1.0
-**Last Updated:** 2026-08-17
+**Last Updated:** 2026-08-22
 **Maintainer:** ZIVIS
 **Applies to:** [ZAT v0.2](../spec/ZAT-v0.2.md) §8.2
 **License:** CC BY 4.0

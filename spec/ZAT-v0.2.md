@@ -1,8 +1,8 @@
 # ZIVIS Attestation Token (ZAT) v0.2
 
 **Status:** Draft Specification
-**Version:** 0.2.0
-**Last Updated:** 2026-08-17
+**Version:** 0.2.1
+**Last Updated:** 2026-08-22
 **Maintainer:** ZIVIS
 **License:** CC BY 4.0
 
