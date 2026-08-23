@@ -261,7 +261,7 @@ An aggregate score is **optional**. When present, it MUST name the profile that 
 | `tier` | integer | No | Tier, if the profile defines tiers |
 | `tier_label` | string | No | Human-readable tier name from the profile |
 | `tier_score` | float | No | Progress within tier, if the profile defines it |
-| `coverage_pct` | float | No | 0.0–1.0 fraction of framework outcomes evaluated |
+| `coverage_pct` | float | No | 0.0–1.0. See §8.3.1. |
 
 **An unnamed aggregate score is worse than no aggregate score.** `scoring_profile` is therefore mandatory whenever `aggregate` is present. A relying party encountering an unrecognized profile MUST NOT compare its scores against tokens from a different profile, and SHOULD either resolve `profile_uri` or disregard the aggregate and read the outcomes directly.
 
@@ -298,19 +298,36 @@ Never present in the signed token by default. Delivered via a Disclosure Set (§
 |-------|------|----------|-------------|
 | `id` | string | Yes | Framework-native outcome identifier |
 | `framework_id` | string | No | REQUIRED when `frameworks` has more than one entry |
-| `status` | string | Yes | `"met"`, `"partial"`, `"not_met"`, `"not_evaluated"` |
+| `status` | string | Yes | `"pass"`, `"partial"`, `"fail"`, `"not_applicable"`, `"not_evaluated"`, `"unknown"` |
 | `confidence` | float | No | 0.0–1.0 assessor confidence |
 | `evidence_refs` | array | No | Evidence item IDs (§9) |
 | `notes` | string | No | Human-readable explanation |
 
-| Status | Meaning |
-|--------|---------|
-| `met` | The subject fully satisfies this outcome |
-| `partial` | Partially satisfied; gaps exist |
-| `not_met` | Not satisfied |
-| `not_evaluated` | In scope but not assessed |
+This is the result-semantics vocabulary defined by the ZIVIS Assurance Model (ZAM) specification §8 — a companion specification for how a framework declares its requirements — adopted verbatim rather than re-specified here — a framework declared under ZAM and attested by a ZAT MUST use the same six values so a relying party never has to translate between them.
 
-> `not_evaluated` and `not_met` are different claims and MUST NOT be conflated. An outcome that could not be assessed is not a failure, and reporting it as one misrepresents the subject.
+| Status | Meaning | Counts toward coverage? |
+|--------|---------|---------|
+| `pass` | The subject fully satisfies this outcome | Yes |
+| `partial` | Partially satisfied; gaps exist | Yes |
+| `fail` | Not satisfied | Yes |
+| `not_applicable` | Out of scope for this subject | **Excluded from the denominator** |
+| `not_evaluated` | In scope, not assessed | Counted in the denominator, no credit |
+| `unknown` | Assessed, no determination reached | Counted in the denominator, no credit |
+
+Three honesty constraints, identical to ZAM §8:
+
+1. `not_applicable` MUST be justified by an applicability rule or a recorded scope decision — it removes an outcome from `coverage_pct`'s denominator, so unjustified use inflates the result.
+2. An issuer MUST NOT represent an outcome that was never evaluated as `fail`, nor as `pass`. `not_evaluated` exists precisely so that an absence of evidence is not reported as a finding, or as a success. `not_evaluated` and `fail` are different claims and MUST NOT be conflated.
+3. `unknown` is distinct from `not_evaluated`: an outcome is `unknown` when it was assessed and no determination could be reached (e.g. conflicting evidence, an inconclusive test), and `not_evaluated` when it was never assessed at all. Collapsing the two hides which situation actually occurred.
+
+### 8.3.1 `coverage_pct` Computation
+
+```
+coverage_pct = count(outcomes with status in {pass, partial, fail})
+             / count(outcomes in the framework's declared set, excluding not_applicable)
+```
+
+The denominator is the framework's declared outcome set (ZAM §6.3) **minus** any outcome marked `not_applicable` for this subject — the same set that produces `frameworks[].definition_hash` (§7.4), narrowed by applicability. `not_evaluated` and `unknown` outcomes remain in the denominator: they are in scope but produced no determination, so they lower `coverage_pct` rather than being quietly dropped from it. This is ZAM §8's rule, restated here because `coverage_pct` is where a relying party actually consumes it.
 
 ### 8.4 `outcomes_root` Computation
 
@@ -553,7 +570,7 @@ This inverts v0.1's redaction model. There, the full token was signed and redact
       "salt": "gK7cP2mQvR4tX9wZ1nB6yA",
       "value": {
         "id": "GV.RM-01",
-        "status": "met",
+        "status": "pass",
         "confidence": 0.88,
         "evidence_refs": ["ev_102"]
       },
@@ -644,16 +661,16 @@ The roots below are genuine: they are the Merkle roots of the six outcomes and f
   ],
 
   "claims": {
-    "outcomes_root": "sha256:e69d97176691869bacfd2a688d933e1afb4d31a8572373e2401e30a61a45b6c7",
+    "outcomes_root": "sha256:e788247b059e0b3d53de423c14ab9ee07dfc2560aa8fb16e8e1a03939a3a0fa6",
     "aggregate": {
       "scoring_profile": "ai.zivis.z-score-1.0",
       "profile_uri": "https://github.com/zivisai/zat/blob/main/profiles/zivis-z-score-1.0.md",
-      "score_raw": 0.7460000000000001,
+      "score_raw": 0.746,
       "score_display": 746,
       "tier": 2,
       "tier_label": "Operational Trust",
       "tier_score": 46.0,
-      "coverage_pct": 0.8571428571428571
+      "coverage_pct": 0.7142857142857143
     }
   },
 
@@ -683,9 +700,9 @@ The roots below are genuine: they are the Merkle roots of the six outcomes and f
 }
 ```
 
-This token is safe to publish. It says: ZIVIS assessed Acme against NIST AI RMF 1.0 by direct testing; Acme scored 746 on the ZIVIS Z-Score profile, placing them at Operational Trust; 6 of the framework's 7 outcomes were evaluated; and the results and evidence are committed to two roots that can be proven against on request.
+This token is safe to publish. It says: ZIVIS assessed Acme against NIST AI RMF 1.0 by direct testing; Acme scored 746 on the ZIVIS Z-Score profile, placing them at Operational Trust; 5 of the framework's 7 declared outcomes received a pass, partial, or fail determination (one, MANAGE-2.2, was not evaluated) — `coverage_pct` = 5/7; and the results and evidence are committed to two roots that can be proven against on request.
 
-It reveals no failure, no gap, and no evidence. The committed set behind it contains a `not_met` on MANAGE-4.1 and a `notes` field describing an out-of-scope pipeline — neither of which a reader of this token can see, and both of which the issuer can prove on demand to a party authorized to receive them.
+It reveals no failure, no gap, and no evidence. The committed set behind it contains a `fail` on MANAGE-4.1 and a `notes` field describing an out-of-scope pipeline — neither of which a reader of this token can see, and both of which the issuer can prove on demand to a party authorized to receive them.
 
 ---
 
@@ -743,3 +760,4 @@ v0.1 tokens are not forward-compatible and cannot be mechanically upgraded — t
 | 0.1.2 | 2026-03-03 | CSF 2.0 as base layer; `target_profile` and `gap_analysis` |
 | 0.1.3 | 2026-07-16 | Public release at github.com/zivisai/zat |
 | **0.2.0** | **2026-08-17** | **Breaking.** Issuer-agnostic core: `iss` opened to any DNS domain, `mark_id` prefix freed, `zivis_model_version` → `assessor_version`, algorithm registry replacing the ML-DSA-65 mandate, per-issuer JWKS discovery, new issuer-trust and self-issuance sections (§6.4, §12.4, §12.5). Scoring extracted to named profiles (§8.2); ZIVIS Z-Score moved to `profiles/zivis-z-score-1.0.md`. Selective disclosure: Merkle `outcomes_root` and `bundle_root` replace inline outcomes and flat `bundle_hash`; Disclosure Sets with inclusion proofs (§14) replace signature-destroying redaction. Framework identity: reverse-DNS namespacing now MUST for non-well-known IDs, new `definition_hash` (§7.4). Evidence items gain `version` and `uri` for pointer and append-only stores (§9.6). Canonicalization moved to RFC 8785 JCS. New `zat_version` field. |
+| **0.2.1** | **2026-08-22** | **Breaking (§8.3 `status` values).** Outcome result vocabulary aligned verbatim with [ZIVIS Assurance Model (ZAM) §8](#83-mapped_outcomes-disclosable): `met`/`not_met` renamed to `pass`/`fail`, and `not_applicable` / `unknown` added — `not_evaluated` and `partial` unchanged. `not_applicable` was previously folded into `not_evaluated`; the two are now distinct claims. New §8.3.1 makes `coverage_pct`'s formula normative: numerator is outcomes with a `pass`/`partial`/`fail` determination, denominator is the declared set minus `not_applicable`. Example vectors regenerated (§14.2, §15, `examples/`) — Merkle roots and proofs over the outcome set changed; `evidence_manifest.bundle_root` did not (evidence items carry no `status`). |

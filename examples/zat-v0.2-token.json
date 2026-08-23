@@ -21,16 +21,16 @@
     }
   ],
   "claims": {
-    "outcomes_root": "sha256:e69d97176691869bacfd2a688d933e1afb4d31a8572373e2401e30a61a45b6c7",
+    "outcomes_root": "sha256:e788247b059e0b3d53de423c14ab9ee07dfc2560aa8fb16e8e1a03939a3a0fa6",
     "aggregate": {
       "scoring_profile": "ai.zivis.z-score-1.0",
       "profile_uri": "https://github.com/zivisai/zat/blob/main/profiles/zivis-z-score-1.0.md",
-      "score_raw": 0.7460000000000001,
+      "score_raw": 0.746,
       "score_display": 746,
       "tier": 2,
       "tier_label": "Operational Trust",
       "tier_score": 46,
-      "coverage_pct": 0.8571428571428571
+      "coverage_pct": 0.7142857142857143
     }
   },
   "evidence_manifest": {
