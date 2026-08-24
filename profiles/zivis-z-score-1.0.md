@@ -123,16 +123,30 @@ tier_score = ((742 − 700) / 100) × 100 = 42.0
 
 ---
 
-## 8. `coverage_pct`
+## 8. Coverage — read from the token, not computed by this profile
+
+**Coverage is not a scoring output and this profile does not define it.** Under ZAT v0.3 it is a
+protocol property of each `frameworks[]` entry (ZAT v0.3 §7.8):
 
 ```
-coverage_pct = count(outcomes with status in {met, partial, not_met, not_applicable})
-             / count(outcomes in the framework definition)
+coverage = { determined, total, pct? }
+determined = count of that entry's Requirements with status in {met, partial, not_met, not_applicable}
+total      = that entry's full Declared Set size (ZAM §6.3)
 ```
 
-Range 0.0–1.0. The numerator is every outcome that received a **determination** — including `not_applicable`, which is a reached scope judgment, not an absence of one. Only `not_evaluated` is outside it. The denominator is the full outcome set the framework declares — the same set that produces `frameworks[].definition_hash` (ZAT §7.4) — unconditional: no status removes anything from it.
+Every status **except `not_evaluated`** counts as determined — including `not_applicable`, which is
+a reached scope judgment rather than an absence of one. An implementation of this profile MUST read
+those counts rather than recompute a coverage number of its own, and MUST present coverage
+alongside `score_raw`: a score of 0.95 over 12% coverage is a narrower claim than 0.80 over 100%,
+and this profile does not fold coverage into the score.
 
-> **Changed 2026-08-24** (ZAT v0.3 item 6, ratified): the earlier formula reused §4's score-inclusion set as the coverage numerator, so an outcome that had genuinely been assessed as out of scope produced the same coverage as one nobody had looked at. Coverage is a statement about *determination*, and a scope decision is one.
+> **Changed 2026-08-24, twice, and the second change is the structural one.** First, the numerator
+> gained `not_applicable` (ZAT v0.3 item 6): the earlier formula reused §4's score-inclusion set, so
+> an outcome genuinely assessed as out of scope produced the same coverage as one nobody had looked
+> at. Then coverage left `aggregate` entirely (ZAT v0.3 item 16 / §7.8), for two reasons: a relying
+> party that rejects this profile still needs to know how much was assessed, and a token attesting
+> **multiple models** has no single correct coverage number. `aggregate.coverage_pct` is absent from
+> v0.3 tokens; v0.2 tokens keep theirs and are read under v0.2's rules.
 
 `coverage_pct` and `score_raw` MUST be read together. A score of 0.95 over 12% coverage is a narrower claim than 0.80 over 100%, and this profile does not fold coverage into the score. Presentation layers SHOULD display them adjacently.
 
@@ -208,7 +222,7 @@ An implementation conforms to `ai.zivis.z-score-1.0` if:
 - [ ] `tier` follows the §6 brackets, half-open except tier 3
 - [ ] `tier_label` is the §6 label for the computed tier, unmodified
 - [ ] `tier_score` follows §7 and is clamped to [0, 100]
-- [ ] `coverage_pct` counts every determination — `met`, `partial`, `not_met`, `not_applicable` — over the framework's full declared outcome count (§8)
+- [ ] Coverage is read from `frameworks[].coverage` (ZAT v0.3 §7.8), not recomputed, and is presented alongside the score (§8)
 - [ ] `partial` CCS follows §9 and lies strictly within (0.0, 1.0)
 
 ---

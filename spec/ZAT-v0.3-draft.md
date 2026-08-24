@@ -24,7 +24,10 @@ v0.3 is a **wire-version revision** (`zat_version: "0.3"`, §18). Verifiers bran
 
 1. **A fourth subject format, `system:`** (§6.3) — applications, services, APIs, workloads, products, components. One opaque prefix rather than a family of parsing rules.
 2. **A third commitment, `claims.evaluations_root`** (§8.5) — detailed per-Requirement Evaluation Records (rationale, method, evaluation time, evidence references), selectively disclosable exactly as outcomes and evidence are, with a **projection rule** (§8.6) making it impossible for the compact and detailed representations of one result to validly disagree.
-3. **Five outcome statuses** (§8.3) — `not_applicable` joins as a reached scope judgment, distinct from `not_evaluated`'s absence of judgment. Nothing is renamed. `coverage_pct` gains a normative formula (§8.3.1).
+3. **Five outcome statuses** (§8.3) — `not_applicable` joins as a reached scope judgment, distinct from `not_evaluated`'s absence of judgment. Nothing is renamed.
+3b. **The committed population MUST BE the ZAM Declared Set** (§8.4.1) — no omissions, no extras. Declared Set, Outcome Records, and Evaluation Records are one population.
+3c. **Coverage moves onto each `frameworks[]` entry** (§7.8) as `determined`/`total` counts, out of the optional scoring aggregate. Coverage is not scoring, and a multi-model token has no single correct coverage number.
+3d. **A second hash, `model_hash`** (§7.4.1) — pinning the exact *meaning* of the Requirements, not just their identifiers, because `assurance_result` is derived from obligation flags `definition_hash` cannot see.
 4. **The Outcome Record is narrowed to what `outcomes` disclosure depth may reveal** (§8.3) — identity, status, confidence. Rationale and evidence linkage are Evaluation Record fields.
 5. **Multi-model Merkle ordering** (§8.4) — leaves sort by the composite `(framework_id, id)` key, closing a tie ambiguity v0.2 never resolved; `frameworks[]` entries are unique by `id` (§7.1).
 6. **Definition resolution** (§7.7) — `frameworks[].definition_uri` resolves an entry to its ZAM Model Version document or Declared-Set projection, making `definition_hash` independently recomputable.
@@ -198,13 +201,15 @@ Declares which Assurance Models or standards are attested. A single ZAT MAY cove
 | `version` | string | Yes | Framework version or publication identifier (§7.3) |
 | `version_scheme` | string | No | `"semver"` or `"publication"` — how `version` is to be compared (§7.3) |
 | `basis` | string | Yes | `"mapped"`, `"tested"`, `"self-attested"`, or `"third-party"` |
-| `definition_hash` | string | No | Hash of the declared Requirement identifier set (§7.4) |
+| `definition_hash` | string | **Yes for a ZAM-backed entry** (§7.2b); otherwise No | Hash of the declared Requirement identifier set (§7.4) |
+| `model_hash` | string | **Yes for a ZAM-backed entry** (§7.2b); otherwise No | Hash of the exact semantic Model Version (§7.4.1) |
 | `definition_uri` | string | No | Where the definition resolves (§7.7) |
 | `assurance_result` | string | No | Model-level result: `"satisfied"`, `"not_satisfied"`, or `"indeterminate"` (§7.6) |
+| `coverage` | object | **Yes for a ZAM-backed entry** (§7.8); otherwise No | Determination counts for this entry (§7.8) |
 | `scope` | array | No | Framework-specific scope labels |
 | `csf_version` | string | No | CSF version, if this framework derives from NIST CSF |
 
-Tier brackets are **not** declared here. They belong to the scoring profile (§8.2).
+Tier brackets are **not** declared here. They belong to the scoring profile (§8.2). **Coverage is not declared in the scoring profile** — it is a protocol property of this entry (§7.8).
 
 ### 7.2 Framework Identifiers
 
@@ -245,6 +250,18 @@ When a `frameworks[]` entry represents a ZAM Assurance Model, `frameworks[].id` 
 
 An entry naming an external published standard is **not** thereby a ZAM Assurance Model, and this equality does not apply to it. A well-known identifier is a naming convention (§7.2), not a claim that the standards body publishes a ZAM.
 
+**What a ZAM-backed entry MUST carry.** Because a ZAM Model Version has a resolvable, publisher-attested definition, an entry claiming to be backed by one MUST commit to it rather than merely name it:
+
+| Field | Rule |
+|---|---|
+| `definition_hash` | **MUST** be present (§7.4). Without it the normative ZAM→ZAT seam is emitted with no set-integrity commitment at all. |
+| `model_hash` | **MUST** be present (§7.4.1). Without it the token does not pin the *meaning* of the Requirements it was assessed against — only their identifiers. |
+| `coverage` | **MUST** be present (§7.8). |
+| `version_scheme` | **MUST** be `"semver"` or absent; **MUST NOT** be `"publication"` (§7.3). A ZAM Model Version is a strict semantic version by ZAM §5.2, so declaring it unordered is an internally contradictory token. |
+| Committed population | The Declared Set rule of §8.4.1 applies. |
+
+An entry is ZAM-backed when the issuer asserts it is — in practice, whenever `definition_uri` resolves to a ZAM Model Version document or Declared-Set projection (§7.7). An issuer attesting against a model it cannot resolve or commit to SHOULD emit the entry as an external standard rather than misrepresent it as ZAM-backed.
+
 ### 7.3 Framework Version
 
 `version` distinguishes revisions of the same framework. Relying parties MUST NOT treat two tokens as comparable when `id` matches but `version` differs.
@@ -253,6 +270,8 @@ An entry naming an external published standard is **not** thereby a ZAM Assuranc
 
 - `"semver"` — `version` is a ZAM Model Version (ZAM §5.2): strict `MAJOR.MINOR.PATCH`, ordered and MAJOR-decomposable, so `compatible` and `minimum` are computable.
 - `"publication"` — `version` is an external standard's own publication identifier (`2.0`, `2017`, `2023`). Not ordered, not decomposable. Only exact-string comparison is defined.
+
+**A ZAM-backed entry (§7.2b) MUST declare `"semver"` or omit the field, and MUST NOT declare `"publication"`.** ZAM §5.2 makes a Model Version a strict semantic version; an entry that claims ZAM backing while declaring its version unordered contradicts itself, and a verifier encountering that combination MUST treat the entry as malformed rather than choose which half to believe.
 
 When the field is absent, resolution proceeds in order:
 
@@ -281,7 +300,42 @@ When two tokens carry the same `id`, `version`, and `definition_hash`, a relying
 
 With §7.7's resolution, the field gains a second verb: a verifier MAY **recompute** `definition_hash` from a resolved definition — turning it from a token-vs-token equality primitive into an independently checkable claim.
 
-> **Canonicalization exception (normative).** Step 3 uses conventional JSON array serialization, **not** RFC 8785 JCS, even though §12.1 mandates JCS for signing and for every other hash in this specification. The two agree on flat ASCII identifier arrays and diverge on non-ASCII ones. This is a deliberate, documented exception preserved for compatibility with hashes already issued (it is also ZAM §7's rule — the two computations are one operation). This construction is **versioned**: any future change to the `definition_hash` algorithm MUST be signalled by a new, explicitly versioned mechanism and MUST NOT silently reinterpret hashes already in circulation.
+> **Canonicalization exception (normative).** Step 3 uses conventional JSON array serialization, **not** RFC 8785 JCS, even though §12.1 mandates JCS for signing and for every other hash in this specification. The two agree on flat ASCII identifier arrays and diverge on non-ASCII ones. This is a deliberate, documented exception preserved for compatibility with hashes already issued (it is also ZAM §7's rule — the two computations are one operation). This construction is **versioned**: any future change to the `definition_hash` algorithm MUST be signalled by a new, explicitly versioned mechanism and MUST NOT silently reinterpret hashes already in circulation. **The exception is scoped to this one field.** `model_hash` (§7.4.1) is new in v0.3, carries no legacy burden, and therefore uses JCS like everything else.
+
+#### 7.4.1 `model_hash` — pinning the *meaning*, not just the identifiers
+
+`definition_hash` answers **"are these the same Requirement identifiers?"** It deliberately excludes titles, normative text, and obligation flags so that translations and editorial revisions do not fork it (§7.4).
+
+That exclusion leaves a gap this field closes. Consider two published Model Versions:
+
+> `REQ-1: "All admin accounts MUST use MFA."`
+> `REQ-1: "Admin accounts SHOULD consider MFA."`
+
+Same identifier, same Declared Set, **same `definition_hash`** — and opposite demands. Worse, `required` and `blocking` are likewise outside `definition_hash`, yet `assurance_result` (§7.6) is *derived from them* (ZAM §8.1). A relying party recomputing the assurance result against a model whose obligation flags changed after issuance gets a different answer than the one signed, with nothing in the token detecting it.
+
+`model_hash` answers the second question: **"is this the exact same published meaning of those Requirements?"**
+
+Computation, over the **canonical model projection** of the Model Version (ZAM §7.1):
+
+1. Build the projection: the Model Version's semantic content, exactly as ZAM §7.1 defines it.
+2. Canonicalize per RFC 8785 JCS (§12.1) — **not** §7.4's legacy construction.
+3. `model_hash = "sha256:" + SHA-256(canonical).toHex().toLowerCase()`
+
+The projection **includes** everything a relying party's interpretation depends on: model `id` and `version`, `standard_edition`, and per Requirement its identifier, normative text, acceptance criteria, `required`, `blocking`, `weight`, and `applicability`. It **excludes** operational and circular fields: `publisher_attestation`, `definition_uri`, `model_hash` itself, and lifecycle `status` (deprecating a version does not change what it means). ZAM §7.1 is normative for the exact projection; this section is normative for how a ZAT carries and uses the result.
+
+**Two hashes, two questions, both cheap:**
+
+| | `definition_hash` | `model_hash` |
+|---|---|---|
+| Answers | Same Requirement identifiers? | Same Requirement *meanings*? |
+| Forks on a translation | No | Yes |
+| Forks on `required: false → true` | No | **Yes** |
+| Recomputable from the Declared-Set projection alone | Yes | **No** — needs the full Model Version |
+| Canonicalization | §7.4's legacy construction | JCS |
+
+**Licensed models keep working.** Because the projection includes requirement text, a party holding only the identifiers-only Declared-Set projection (ZAM §14.2 — the licensing floor) **cannot recompute** `model_hash`. That party can still *check* it: the publisher attestation (ZAM §9.4.1) signs `model_hash` for that exact `id` + `version`, so comparing the token's value against the attested value proves the binding **without ever redistributing the licensed text**. Integrity survives the licensing constraint; only recomputation-from-scratch requires the full document.
+
+**Verifier rules.** A relying party that resolves the full Model Version MUST recompute `model_hash` and MUST reject the token on mismatch. A relying party that resolves only the projection SHOULD compare the token's `model_hash` against the publisher attestation's, and MUST NOT treat a match on `definition_hash` alone as evidence that the semantics are unchanged. A relying party recomputing `assurance_result` (§7.6) **MUST** do so against a model whose `model_hash` matches the token's — recomputing against any other version of the same identifiers is not a check, it is a different question.
 
 ### 7.5 CSF 2.0 as Base Layer
 
@@ -307,6 +361,30 @@ For a ZAM-backed entry, `definition_uri` **MUST** resolve to one of exactly two 
 Verifier procedure: fetch, recompute `definition_hash` over the resolved identifier set (§7.4), and compare against the token's committed value. **Integrity comes from the hash, not from the URI's host** — a document served from anywhere that hashes correctly is the right document; one that doesn't, isn't, wherever it came from. Publication provenance comes from the publisher identity and publisher attestation inside the resolved document (ZAM §9.4.1), not from `iss` (§7.2).
 
 Pre-standardization note: ZIVIS's v0.2-era issuer extension served this document with field names `framework_id`/`outcome_ids`; v0.3 verifiers SHOULD accept those as aliases of `model_id`/`requirement_ids`.
+
+### 7.8 `coverage` — a protocol property of the entry, not of the score
+
+Coverage states what fraction of an Assurance Model actually received a determination. **It belongs to the `frameworks[]` entry, not to `claims.aggregate`**, for two reasons that are independently sufficient.
+
+First, **coverage is not scoring.** A relying party that rejects a token's scoring profile, or reads a token carrying no `aggregate` at all, still needs to know how much of the model was looked at. Burying coverage inside an optional scored summary makes the most basic honesty signal in the format contingent on adopting someone's scoring method.
+
+Second, and decisively: **a ZAT may attest multiple models.** A single token-level `coverage_pct` covering an OWASP API model at 92% and an AI-security model at 60% has no correct value. There is one coverage number per model, and it belongs where the model is named.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `determined` | integer | Yes | Requirements in this entry's Declared Set that received a determination — status in `{met, partial, not_met, not_applicable}` |
+| `total` | integer | Yes | Size of this entry's Declared Set (ZAM §6.3) — the same set that produces `definition_hash` |
+| `pct` | float | No | `determined / total`, 0.0–1.0. A display convenience, derived; the counts are authoritative |
+
+```json
+"coverage": { "determined": 42, "total": 46, "pct": 0.9130434782608695 }
+```
+
+**Counts, not a bare percentage, are normative.** `0.91` does not distinguish 42-of-46 from 4,200-of-4,600, and the difference matters to a reader deciding how much a gap represents. A percentage alone also silently loses the denominator that §8.4.1 makes verifiable.
+
+**Consistency rule.** `total` MUST equal the size of the Declared Set committed under §8.4.1, and `determined` MUST equal the number of committed Outcome Records whose status is a determination. A relying party disclosed enough to count MUST verify both and MUST reject the token on mismatch — the same class of rule as §7.6 and §8.6. Because §8.4.1 binds the committed population to the Declared Set, `total` is not an issuer's unverifiable assertion about a denominator; it is checkable against the token's own commitments and against the resolved definition.
+
+`pct`, when present, MUST equal `determined / total`. When `total` is zero the entry is degenerate and an issuer SHOULD omit the model rather than attest an empty one.
 
 ---
 
@@ -341,7 +419,8 @@ An aggregate score is **optional**. When present, it MUST name the profile that 
 | `tier` | integer | No | Tier, if the profile defines tiers |
 | `tier_label` | string | No | Human-readable tier name from the profile |
 | `tier_score` | float | No | Progress within tier, if the profile defines it |
-| `coverage_pct` | float | No | 0.0–1.0 per §8.3.1's formula |
+
+> **`coverage_pct` is removed from `aggregate` in v0.3.** Coverage moved to `frameworks[].coverage` (§7.8), where it is per-model and independent of scoring. A v0.3 token MUST NOT carry `aggregate.coverage_pct`; v0.2 tokens keep theirs and are read under v0.2's rules (§18). A scoring profile MAY define its own coverage-derived metrics under its own names, but the protocol's coverage is §7.8's and a profile MUST NOT redefine it.
 
 **An unnamed aggregate score is worse than no aggregate score.** `scoring_profile` is therefore mandatory whenever `aggregate` is present. A relying party encountering an unrecognized profile MUST NOT compare its scores against tokens from a different profile, and SHOULD either resolve `profile_uri` or disregard the aggregate and read the outcomes directly.
 
@@ -372,16 +451,9 @@ Never present in the signed token by default. Delivered via a Disclosure Set (§
 
 > `not_evaluated` and `not_met` are different claims and MUST NOT be conflated: a Requirement that could not be assessed is not a failure, and reporting it as one misrepresents the subject. `not_applicable` and `not_evaluated` are equally different claims and MUST NOT be conflated: `not_applicable` asserts a scope decision was made and may be challenged; `not_evaluated` asserts nothing was looked at.
 
-**Forward-compatibility rule (normative).** A relying party encountering a `status` value it does not recognize MUST treat that Requirement as not contributing evaluated credit toward any aggregate or coverage computation — i.e. handle it as it would `not_evaluated` — and MUST NOT treat an unrecognized value as `met` or as `not_met`. This is what lets a v0.2-only verifier meet a v0.3 token, or a v0.3 verifier meet a future revision, and fail safe on an added enum value instead of silently scoring it as a pass or a failure.
+**Forward-compatibility rule (normative).** A relying party encountering a `status` value it does not recognize MUST treat that Requirement as not contributing evaluated credit toward any aggregate or coverage computation — i.e. handle it as it would `not_evaluated` — and MUST NOT treat an unrecognized value as `met` or as `not_met`.
 
-#### 8.3.1 `coverage_pct`
-
-```
-coverage_pct = count(Requirements with status in {met, partial, not_met, not_applicable})
-             / count(Requirements in the model's Declared Set)
-```
-
-Every status **except `not_evaluated`** counts as covered — including `not_applicable`, which is a reached determination. The denominator is the full Declared Set (ZAM §6.3), unconditional: no status removes anything from it. Coverage is a statement about *determination*; a scope decision is one, and an absence of judgment is not.
+> This is a **fail-safe, not a permission.** §18 requires a wire-version change for any alteration to enum membership, so within a wire revision a conformant token cannot introduce a new status, and a verifier rejects unknown wire versions outright (§12.6 step 1) rather than partially processing them. The rule therefore governs what a verifier does when it meets an unrecognized value anyway — a malformed token, a non-conformant issuer, an issuer extension it does not implement — and its answer is: refuse to score it in either direction. Read it as defense in depth. It is emphatically **not** a licence to widen the vocabulary without bumping `zat_version`; the retired "0.2.1" (§19) is what that mistake looks like.
 
 ### 8.4 `outcomes_root` Computation
 
@@ -400,20 +472,72 @@ An empty Requirement set produces `outcomes_root = "sha256:" + SHA-256(0x02).toH
 
 > **Changed from v0.2**, which sorted by `id` alone. In a multi-model token two frameworks can declare the same identifier, the sort then has ties, tie order is unspecified, and two conformant implementations can commit the same set to different roots. No single-model token is affected. v0.2 roots are NOT reinterpreted under this ordering (§18) — the composite key applies to tokens declaring `zat_version: "0.3"`.
 
+#### 8.4.1 Population — the committed set MUST BE the Declared Set
+
+§8.4 defines how to hash whatever Outcome Records are present. This section defines **which records MUST be present**, and it is the rule that makes every downstream honesty claim in this specification enforceable.
+
+> **For every ZAM-backed `frameworks[]` entry (§7.2b), `outcomes_root` MUST commit exactly one Outcome Record for every Requirement in that Model Version's Declared Set (ZAM §6.3). It MUST NOT omit a declared Requirement, and it MUST NOT commit a Requirement outside that Declared Set. A Requirement that was not assessed is committed with status `not_evaluated` — it is never omitted.**
+
+**Why this is a MUST and not a SHOULD.** Without it, an issuer with a fifty-Requirement model can commit the forty-three convenient ones and produce a perfectly valid Merkle root over them. Every check in this specification would pass: the root computes, the proofs verify, the signature holds. And the token would be a lie of omission with cryptographic backing. The failure is worse than it first looks, because three other things are derived from the committed population:
+
+- `assurance_result` (§7.6) is derived from the committed results, so dropping the failing Requirements manufactures a `satisfied` model.
+- `coverage` (§7.8) counts against a `total` that would otherwise be the issuer's unverifiable assertion.
+- §14's selective disclosure exists so a holder can reveal *some* of a committed set — a design that assumes the committed set is complete. Withholding at commitment time defeats disclosure control at its root, and unlike a disclosure decision it is permanent and invisible.
+
+**The full invariant.** Combined with §8.5's coverage rule, the three populations are one population:
+
+```
+ZAM Declared Set  ==  Outcome Record population  ==  Evaluation Record population
+```
+
+This is the invariant an implementation should enforce structurally — derive all three from one enumeration of the Declared Set — rather than check after the fact.
+
+**Verification.** A relying party that resolves the definition (§7.7) MUST compare the committed population against the resolved Declared Set and MUST reject the token on any omission or extra. A party that cannot resolve the definition can still check `coverage.total` against the count it was told and the records it was disclosed. `outcome_count` (§8.1), when present, MUST equal the Declared Set size.
+
+**Non-ZAM entries.** An entry naming an external published standard has no resolvable Declared Set, so this rule cannot bind it. Such an entry's committed population is the issuer's assertion — which is precisely why §7.2b requires ZAM-backed entries to be committed properly, and why a relying party should weigh the two kinds of entry differently.
+
 ### 8.5 Evaluation Records — `evaluations_root`
 
 OPTIONAL third commitment: a salted Merkle root over **Evaluation Records**, built by the identical §8.4 construction (fresh ≥128-bit salt per leaf, `0x00`/`0x01` domain separation, empty-set sentinel). An Evaluation Record is the detailed account of how one Requirement's result was reached; the Outcome Record (§8.3) is its compact projection (§8.6).
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `model_id` | string | Yes | The Assurance Model this Requirement belongs to — equals the `frameworks[].id` of its entry |
-| `model_version` | string | Yes | That entry's `version` |
-| `requirement_id` | string | Yes | Requirement identifier within the model |
-| `status` | string | Yes | The five-state result (§8.3) |
-| `rationale` | string | No | Why this determination was reached — ZAR §6's "rationale" |
-| `method` | string | No | How it was determined, for **this Requirement** — ZAR §6's "method" |
-| `evaluated_at` | string | Yes | ISO 8601 UTC. When this Requirement was evaluated. The field ZAR §7's freshness constraints are checked against. |
-| `evidence_refs` | array | No | Evidence Item IDs (§9.3), the linkage that moved here from v0.2's outcome object |
+| `model_id` | string | Always | The Assurance Model this Requirement belongs to — equals the `frameworks[].id` of its entry |
+| `model_version` | string | Always | That entry's `version` |
+| `requirement_id` | string | Always | Requirement identifier within the model |
+| `status` | string | Always | The five-state result (§8.3) |
+| `rationale` | string | **Conditional** | Why this determination was reached — ZAR §6's "rationale" |
+| `method` | string | **Conditional** | How it was determined, for **this Requirement** — ZAR §6's "method" |
+| `evaluated_at` | string | **Conditional** | ISO 8601 UTC. When this Requirement was evaluated. The field ZAR §7's freshness constraints are checked against. |
+| `evidence_refs` | array | **Conditional** | Evidence Item IDs (§9.3), the linkage that moved here from v0.2's outcome object. MAY be empty. |
+
+##### The conditional rules — a determination and its absence are different records
+
+Two problems are solved by one split. **First**, §8.4.1 requires an Evaluation Record for every Declared Set Requirement, including those never assessed — but an unconditionally REQUIRED `evaluated_at` would force a `not_evaluated` Requirement to state *when* an evaluation happened that by definition never did. That is not a technicality; it is the token asserting something false about the world. **Second**, ZAR §6 defines `evaluations` depth as results *with rationale, method, and evidence commitments* — so with all three optional, a token could carry an `evaluations_root` containing nothing but identity, status, and a timestamp and still appear to answer that depth. That is the interoperability gap this revision exists to close.
+
+**When `status` is a reached determination — `met`, `partial`, `not_met`, or `not_applicable`:**
+
+| Field | Rule |
+|---|---|
+| `evaluated_at` | **MUST** be present |
+| `method` | **MUST** be present |
+| `rationale` | **MUST** be present |
+| `evidence_refs` | **MUST** be present; MAY be an empty array |
+
+An empty `evidence_refs` is a meaningful and honest value: it says this determination rests on no committed artifact. That differs from the field's absence, which under these rules is malformed.
+
+`rationale` is REQUIRED for `not_applicable` with particular force: ZAM §8 requires a scope decision to be justified, and the rationale is where that justification lives. An unjustified `not_applicable` is how a subject takes credit for Requirements it simply declined to face.
+
+**When `status` is `not_evaluated`:**
+
+| Field | Rule |
+|---|---|
+| `evaluated_at` | **MUST NOT** be present |
+| `method` | **MUST NOT** be present |
+| `rationale` | **MAY** be present — to explain *why* the Requirement remains unevaluated |
+| `evidence_refs` | **MUST** be absent or empty |
+
+This preserves the distinction the five-state vocabulary exists for: **an absence of evaluation is not an evaluation with a timestamp.** A verifier encountering `not_evaluated` alongside an `evaluated_at` MUST treat the record as malformed — the combination is not merely redundant but self-contradictory, and accepting it would let re-minting dress untouched Requirements up as freshly examined ones.
 
 **Identity is the triple (`model_id`, `model_version`, `requirement_id`), not a bare id.** A disclosed Evaluation Record travels alone — a relying party handed one record plus an inclusion proof has the record and the root, not the `frameworks[]` array — so a record that is not self-identifying cannot be interpreted without re-fetching context the disclosure model exists to avoid. A record's triple MUST be unique within a token.
 
@@ -421,7 +545,9 @@ OPTIONAL third commitment: a salted Merkle root over **Evaluation Records**, bui
 
 **Coverage rule.** When `evaluations_root` is present it MUST commit an Evaluation Record for **every** Requirement committed to `outcomes_root`, and MUST NOT commit a record for any Requirement not committed there. Two roots over different populations invites "which one is authoritative" and gives an issuer a withholding surface — detail for the flattering Requirements, silence for the rest, both signed. An issuer without full evaluation records **omits `evaluations_root` entirely**: a partial one is not a lesser version of it, it is a different and worse claim.
 
-**`evaluated_at` is REQUIRED** — it is the reason this structure exists. ZAR §7 requires freshness be judged against evaluation time and treated as unsatisfied where no per-evaluation timestamps exist; before this field, no conformant ZAT could satisfy any ZAR freshness constraint. `rationale` and `method` are optional; the timestamp is not.
+Combined with §8.4.1, this closes the loop: the Declared Set, the Outcome Record population, and the Evaluation Record population are one and the same set.
+
+**`evaluated_at` is why this structure exists.** ZAR §7 requires freshness be judged against evaluation time and treated as unsatisfied where no per-evaluation timestamps exist; before this field, no conformant ZAT could satisfy any ZAR freshness constraint. It is REQUIRED on every reached determination and PROHIBITED on `not_evaluated`, per the conditional rules above.
 
 **Provenance roles are deliberately not fields here.** Evaluator/approver/verifier identity stays at token level (`methodology`) in this revision. Per-Requirement provenance is a real eventual need, but nothing in ZAR asks for it; when it is needed it is an additive optional field, exactly as this structure is.
 
@@ -548,7 +674,9 @@ Relying parties SHOULD check revocation for access-control decisions.
 
 `assessor_version` is issuer-defined and opaque to verifiers. It exists so that a claim can be traced to the version of the system that made it.
 
-**The bound rule (normative).** When `claims.evaluations_root` is present, `assessment_window` MUST be present and MUST conservatively bound the committed evaluations: `start` at or before the earliest `evaluated_at`, `end` at or after the latest. The two structures are committed in the same signature, so a violation is provable from any single disclosed Evaluation Record, and a token violating it is non-conformant.
+**The bound rule (normative).** When `claims.evaluations_root` is present, `assessment_window` MUST be present and MUST conservatively bound **every Evaluation Record that carries an `evaluated_at`**: `start` at or before the earliest such timestamp, `end` at or after the latest. Records with status `not_evaluated` carry no timestamp by §8.5's conditional rules and are therefore outside the bound — correctly, since a window over evaluations that never happened would be meaningless. The two structures are committed in the same signature, so a violation is provable from any single disclosed Evaluation Record, and a token violating it is non-conformant.
+
+A token whose Declared Set is entirely `not_evaluated` has no timestamps to bound. Such a token attests that nothing was assessed; it MUST still carry `assessment_window` if `evaluations_root` is present, and the window then bounds an empty set — which is vacuously satisfied and, read together with `coverage.determined = 0` (§7.8), tells the honest story.
 
 This is what gives ZAR summary-depth freshness a mechanical check without evaluation disclosure: a maximum-age constraint of *N* is conservatively satisfied when `assessment_window.start ≥ (now − N)`, because start bounds the earliest evaluation. When the check fails the constraint is not refuted — merely unconfirmable at that depth (ZAR §7, §8.2). Token reissuance time never enters this computation: a fresh `issued_at` over stale evaluations is exactly what the rule exists to expose.
 
@@ -755,7 +883,8 @@ Some core fields leak information even without any disclosure:
 - `outcome_count` and `evidence_count` reveal assessment scale. Both are OPTIONAL; issuers concerned about this SHOULD omit them.
 - `frameworks[].scope` reveals what was assessed, and by omission what was not.
 - `frameworks[].assurance_result` reveals the model-level state at a glance — that is its purpose; issuers for whom it is too disclosive omit it.
-- `aggregate.coverage_pct` reveals how much of the model went unevaluated.
+- `frameworks[].coverage` reveals how much of each model went unevaluated — deliberately, and per model. It is REQUIRED on ZAM-backed entries (§7.2b): a credential that hides how little it covers is the failure mode coverage exists to prevent, so this one is not an issuer's choice.
+- `frameworks[].model_hash` reveals which exact model version was assessed, and by extension that a particular published version was in use.
 - `expires_at` reveals the `basis` recommendation used, hence something about assessment depth.
 - `assessment_window` bounds, under §11's rule, reveal when evaluation activity occurred.
 
@@ -804,8 +933,10 @@ test vectors. The signature block is illustrative — the fixture token is unsig
       "version_scheme": "semver",
       "basis": "tested",
       "definition_hash": "sha256:b3b8e80df3ce572f673c77924166449ccb8fa042b08abf02454d2e4d838eabd9",
+      "model_hash": "sha256:2269f8b16903486756e90ddab65ebe517be6362b6a89b4276b8277ec691cca0f",
       "definition_uri": "https://trust.acme.com/models/com.acme.api-security/1.2.0",
-      "assurance_result": "indeterminate"
+      "assurance_result": "indeterminate",
+      "coverage": { "determined": 3, "total": 4, "pct": 0.75 }
     },
     {
       "id": "ai.zivis.agent-baseline",
@@ -814,14 +945,16 @@ test vectors. The signature block is illustrative — the fixture token is unsig
       "version_scheme": "semver",
       "basis": "tested",
       "definition_hash": "sha256:ca20d9ac208e8e97b084b1a8f334f33c7848a277744d4bcb66f86e652195203b",
+      "model_hash": "sha256:ef25289e907f538b07333597eb5d5873184fcf97c8142536814a1f66c540c908",
       "definition_uri": "https://trust.zivis.ai/models/ai.zivis.agent-baseline/2.0.0",
-      "assurance_result": "not_satisfied"
+      "assurance_result": "not_satisfied",
+      "coverage": { "determined": 2, "total": 2, "pct": 1.0 }
     }
   ],
 
   "claims": {
     "outcomes_root": "sha256:00194627baba2a86dc528e2c2f15f07a2a58b7b77d337a0ad373299c3065749d",
-    "evaluations_root": "sha256:bb7ac6192aeb8b50ce952302addaee1d173dc6f293dcd75cf0ec6ef39f730867",
+    "evaluations_root": "sha256:1d3773ebcdd1ce2fdcdace72c06d313ecce3197f1f78affebab9df50bbf0eaa2",
     "outcome_count": 6
   },
 
@@ -851,18 +984,29 @@ test vectors. The signature block is illustrative — the fixture token is unsig
 }
 ```
 
-Note what this example demonstrates that no v0.2 token could: the subject is a *system*, not an
-org. The first attested model is **published by `acme.com` while the token is issued by
-`zivis.ai`** — independent evaluation, with the model resolvable at the publisher's own URI (§7.2,
-§7.7). The two models both declare a Requirement `1.1`, and the composite leaf ordering keeps the
-commitment deterministic anyway (§8.4). The model-level results are carried and honest — one
-`indeterminate` because a required Requirement is `not_evaluated`, one `not_satisfied` because a
-required Requirement is `not_met` (§7.6, ZAM §8.1) — and the committed set behind the roots
-contains a `not_applicable` scope decision that counts as covered and a `not_evaluated` gap that
-does not (§8.3.1). The assessment window provably bounds every committed `evaluated_at`, so a
-freshness constraint is mechanically checkable from this public form alone (§11). `aggregate` is
-absent, and the token is still meaningful — scoring was always optional; the assurance state no
-longer depends on it.
+Note what this example demonstrates that no v0.2 token could. The subject is a *system*, not an org.
+The first attested model is **published by `acme.com` while the token is issued by `zivis.ai`** —
+independent evaluation, with the model resolvable at the publisher's own URI (§7.2, §7.7). Both
+models declare a Requirement `1.1`, and the composite leaf ordering keeps the commitment
+deterministic anyway (§8.4). Each entry carries **both hashes**: `definition_hash` pinning which
+Requirements, `model_hash` pinning what they mean (§7.4.1) — so a relying party recomputing
+`assurance_result` can confirm it is recomputing against the same obligations the issuer saw. The
+model-level results are carried and honest: one `indeterminate` because a required Requirement is
+`not_evaluated`, one `not_satisfied` because a required Requirement is `not_met` (§7.6, ZAM §8.1).
+
+**Coverage is per model and needs no scoring profile**: 3-of-4 for the Acme model, 2-of-2 for the
+agent baseline (§7.8) — two different numbers that a single token-level percentage could not have
+expressed. The committed population is the full Declared Set of each model (§8.4.1), so those
+denominators are checkable rather than asserted, and the `not_applicable` scope decision counts as
+determined while the `not_evaluated` gap does not.
+
+The assessment window bounds every *timestamped* evaluation, so a freshness constraint is
+mechanically checkable from this public form alone (§11) — while the one `not_evaluated`
+Requirement carries no timestamp at all (§8.5), because there was no evaluation to date.
+
+Finally, `aggregate` is **absent**, and the token remains fully meaningful: model-level results and
+coverage both survive without any scoring profile. That is the point of moving coverage out of the
+score.
 
 ---
 
@@ -879,9 +1023,13 @@ A token conforms to ZAT v0.3 if:
 - [ ] Self-issued tokens declare `basis: "self-attested"` on every framework (§6.4)
 - [ ] `frameworks` has at least one object with all required fields, and no two entries share an `id` (§7, §7.1)
 - [ ] Every `frameworks[].id` is either well-known or reverse-DNS namespaced (§7.2)
+- [ ] Every **ZAM-backed** entry carries `definition_hash`, `model_hash`, and `coverage`, and does not declare `version_scheme: "publication"` (§7.2b)
 - [ ] `claims.outcomes_root` is computed per §8.4 — composite (`framework_id`, `id`) ordering
-- [ ] When `claims.evaluations_root` is present: it commits a record for exactly the `outcomes_root` Requirement set (§8.5), every record carries `evaluated_at`, `assessment_window` is present and bounds every `evaluated_at` (§11), and every committed projection agrees with its record (§8.6)
+- [ ] For every ZAM-backed entry, the committed Outcome Record population is **exactly** that Model Version's Declared Set — no omissions, no extras (§8.4.1)
+- [ ] `frameworks[].coverage.total` equals that entry's Declared Set size and `determined` equals its committed determinations; `pct`, when present, equals `determined / total` (§7.8)
+- [ ] When `claims.evaluations_root` is present: it commits a record for exactly the `outcomes_root` Requirement set (§8.5); every record whose status is a determination carries `evaluated_at`, `method`, `rationale`, and `evidence_refs`; every `not_evaluated` record carries neither `evaluated_at` nor `method`; `assessment_window` is present and bounds every timestamped record (§11); and every committed projection agrees with its record (§8.6)
 - [ ] When `frameworks[].assurance_result` is present, it equals the ZAM §8.1 derivation over the committed results (§7.6)
+- [ ] `claims.aggregate.coverage_pct` is **absent** — coverage is `frameworks[].coverage` (§7.8, §8.2)
 - [ ] When `claims.aggregate` is present, `scoring_profile` is present and namespaced (§8.2)
 - [ ] `evidence_manifest.bundle_root` is computed per §9.2
 - [ ] `evidence_manifest.uri` serves revocation without authorization (§10.2)
@@ -890,7 +1038,7 @@ A token conforms to ZAT v0.3 if:
 - [ ] `sig.alg` is in the algorithm registry (§12.3)
 - [ ] The signature covers the JCS-canonicalized token minus `sig` (§12.1, with §7.4's documented exception)
 
-A verifier conforms if it additionally: rejects unknown `zat_version` values (§12.6 step 1); treats unrecognized `status` values per the forward-compatibility rule (§8.3); rejects on projection mismatch (§8.6) and `assurance_result` mismatch (§7.6) when disclosed enough to check; never infers `version_scheme` from a string's shape (§7.3); and never requires a namespaced `id` or `definition_uri` host to relate to `iss` (§7.2).
+A verifier conforms if it additionally: rejects unknown `zat_version` values (§12.6 step 1); treats unrecognized `status` values per the forward-compatibility rule (§8.3); rejects on projection mismatch (§8.6), `assurance_result` mismatch (§7.6), `coverage` mismatch (§7.8), and Declared Set mismatch (§8.4.1) when disclosed enough to check; rejects `model_hash` mismatch when it resolves the full Model Version, and never treats a `definition_hash` match alone as evidence that semantics are unchanged (§7.4.1); rejects an Evaluation Record whose conditional fields contradict its status (§8.5); never infers `version_scheme` from a string's shape (§7.3); and never requires a namespaced `id` or `definition_uri` host to relate to `iss` (§7.2).
 
 ---
 
@@ -905,8 +1053,12 @@ A verifier conforms if it additionally: rejects unknown `zat_version` values (§
 | `framework_id` on outcomes only when multi-framework | REQUIRED on every Outcome Record |
 | `outcomes_root` leaves sorted by `id` | Sorted by composite (`framework_id`, `id`), componentwise |
 | No evaluation detail structure | `claims.evaluations_root` + Evaluation Records + projection rule (§8.5–8.6) |
-| No per-evaluation or evidence timestamps | `evaluated_at` (required per record), `collected_at` (optional per item) |
-| `assessment_window` unbound | MUST bound committed `evaluated_at` values when `evaluations_root` present |
+| No per-evaluation or evidence timestamps | `evaluated_at` (required on a determination, prohibited on `not_evaluated`), `collected_at` (optional per item) |
+| `assessment_window` unbound | MUST bound every *timestamped* Evaluation Record when `evaluations_root` present |
+| Committed population unconstrained | For a ZAM-backed entry it MUST BE the Declared Set — no omissions, no extras (§8.4.1) |
+| `aggregate.coverage_pct` (one per token) | `frameworks[].coverage` counts, one per model, outside the score (§7.8) |
+| One hash per entry (`definition_hash`) | Two — `definition_hash` for identifiers, `model_hash` for meaning (§7.4.1); both MUST on ZAM-backed entries |
+| `definition_hash` optional everywhere | MUST for ZAM-backed entries (§7.2b) |
 | Verifier heuristic: namespaced `id` ~ `iss` | Removed; publisher ≠ issuer is first-class (§7.2) |
 | No definition resolution | `definition_uri` → ZAM §14.1 document or §14.2 projection |
 | Version comparability implicit | `version_scheme` + three-step resolution + alias rule |
@@ -937,4 +1089,5 @@ The wire version is `zat_version` — the string a verifier branches on. It is t
 | 0.1.0–0.1.3 | 2026-03 → 2026-07 | See v0.2 §18. Public release at github.com/zivisai/zat (0.1.3). |
 | 0.2.0 | 2026-08-17 | **Breaking.** Issuer-agnostic core, commitment-first selective disclosure, namespaced framework identity, JCS canonicalization, scoring extracted to named profiles. See v0.2 §18. |
 | ~~0.2.1~~ | 2026-08-23 | **Retired.** Outcome-vocabulary change (`met`→`pass`, `not_met`→`fail`, +`unknown`) pushed as a patch bump; direction rejected by ruling the same day; reverted. The tag MUST NOT be reused (§18). |
-| 0.3.0-draft | 2026-08-24 | **Wire revision (draft, unratified).** `system:` subject; `claims.evaluations_root` + Evaluation Records + projection rule; five-state outcome vocabulary (`not_applicable` added, nothing renamed) + normative `coverage_pct`; Outcome Record narrowed to the `outcomes`-depth boundary; composite Merkle ordering + `frameworks[]` uniqueness; `definition_uri` resolving to ZAM §14 documents; publisher ≠ issuer repair; `version_scheme`; `evaluated_at`/`collected_at`/bounded `assessment_window`; `assurance_result`; JCS exception for `definition_hash`; wire-version policy (§18). Decision record: the platform repository’s `docs/plans/ZAT-V0.3-DRAFT-PROPOSAL.md`, items 1–14. |
+| 0.3.0-draft | 2026-08-24 | **Wire revision (draft, unratified).** `system:` subject; `claims.evaluations_root` + Evaluation Records + projection rule; five-state outcome vocabulary (`not_applicable` added, nothing renamed); Outcome Record narrowed to the `outcomes`-depth boundary; composite Merkle ordering + `frameworks[]` uniqueness; `definition_uri` resolving to ZAM §14 documents; publisher ≠ issuer repair; `version_scheme`; `evaluated_at`/`collected_at`/bounded `assessment_window`; `assurance_result`; JCS exception for `definition_hash`; wire-version policy (§18). Decision record: the platform repository’s `docs/plans/ZAT-V0.3-DRAFT-PROPOSAL.md`, items 1–14. |
+| 0.3.0-draft rev. 2 | 2026-08-24 | **Review pass — five structural repairs before ratification.** §8.4.1: the committed Outcome Record population MUST BE the ZAM Declared Set, closing a hole where an issuer could commit only the convenient Requirements and still produce a valid root. §7.8: `coverage` moves out of the optional scoring aggregate onto each `frameworks[]` entry as `determined`/`total` counts — coverage is not scoring, and a multi-model token has no single correct coverage number; `aggregate.coverage_pct` is removed. §8.5: `evaluated_at`, `method`, `rationale` and `evidence_refs` become conditional — REQUIRED on a reached determination, and `evaluated_at`/`method` PROHIBITED on `not_evaluated`, which previously had to claim a timestamp for an evaluation that never happened while simultaneously letting a bare record masquerade as `evaluations` depth. §7.4.1: new `model_hash` binding the exact *semantic* Model Version, because `definition_hash` is blind to requirement text and to the `required`/`blocking` flags that `assurance_result` is derived from. §7.2b: ZAM-backed entries MUST carry `definition_hash`, `model_hash` and `coverage`, and MUST NOT declare `version_scheme: "publication"`. Plus the §8.3 forward-compatibility rule reworded to stop contradicting §18. Decision record items 15–22. |

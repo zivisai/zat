@@ -4,9 +4,12 @@
  *
  * Implements the draft constructions of docs/specs/ZIVIS-FRAMEWORK-ATTESTATION-TOKEN-v0.3.md:
  *   §7.4  definition_hash  (JSON.stringify over the sorted id array — deliberately NOT JCS)
+ *   §7.4.1 model_hash      (JCS over the canonical model projection — semantics, not just ids)
+ *   §7.8  coverage         (per-entry determined/total counts, not a token-level percentage)
  *   §8.3  Outcome Record   (narrowed: framework_id / id / status / confidence)
  *   §8.4  outcomes_root    (composite (framework_id, id) componentwise leaf ordering)
  *   §8.5  Evaluation Record + evaluations_root (triple identity, componentwise ordering)
+ *   §8.4.1 population rule (committed set MUST BE the ZAM Declared Set — no omissions, no extras)
  *   §8.6  projection rule  (outcome MUST agree with its evaluation record)
  *   §9.2  bundle_root
  *   §11   assessment_window conservative bound
@@ -22,7 +25,10 @@
  *   S7  90-day-old evaluations re-minted today must fail a 30-day freshness check — computed
  *   S8  duplicate Requirement ids across two models → deterministic composite ordering — computed
  *   S9  historical definition_hash stays stable under its original serialization — computed
- *   S10 ZAR response envelope: satisfied / partial / refused / unavailable distinguishable — structural example
+ *   S10 ZAR response envelope: fulfilled / partial / refused / unavailable distinguishable — structural example
+ *   S11 Declared Set binding: omitting a declared Requirement is detectable (§8.4.1) — computed (negative)
+ *   S12 not_evaluated carries NO evaluated_at/method; determinations carry all four (§8.5) — computed
+ *   S13 model_hash forks on an obligation flag change while definition_hash does NOT (§7.4.1) — computed
  *
  * Deterministic on purpose: salts are fixed test-vector salts (the spec requires fresh random
  * salts in production; published vectors necessarily publish theirs).
@@ -55,6 +61,29 @@ const hex = (buf) => 'sha256:' + buf.toString('hex');
 function definitionHash(ids) {
   const sorted = [...new Set(ids)].sort(); // default sort = UTF-16 code units; identical to code-point order for BMP ids
   return 'sha256:' + createHash('sha256').update(JSON.stringify(sorted), 'utf8').digest('hex');
+}
+
+// ---------- §7.4.1 model_hash — JCS over the canonical model projection (semantics, not ids) ----------
+function modelHash(model) {
+  const projection = {
+    id: model.id,
+    version: model.version,
+    ...(model.standard_edition ? { standard_edition: model.standard_edition } : {}),
+    requirements: [...model.requirements]
+      .sort((a, b) => cmp(a.id, b.id))
+      .map((r) => ({
+        id: r.id,
+        title: r.title,
+        requirement: r.requirement,
+        ...(r.criteria ? { criteria: r.criteria } : {}),
+        required: r.required,
+        blocking: r.blocking,
+        ...(r.weight !== undefined ? { weight: r.weight } : {}),
+        ...(r.applicability ? { applicability: r.applicability } : {}),
+      })),
+  };
+  // JCS here, NOT §7.4's legacy construction — model_hash is new and carries no compat burden.
+  return 'sha256:' + createHash('sha256').update(canonicalize(projection), 'utf8').digest('hex');
 }
 
 // ---------- §8.4 Merkle ----------
@@ -111,8 +140,24 @@ const evalOrder = (a, b) =>
   cmp(a.record.model_id, b.record.model_id) || cmp(a.record.model_version, b.record.model_version) || cmp(a.record.requirement_id, b.record.requirement_id);
 
 // ---------- Fixture content: two models, deliberately sharing Requirement id "1.1" (S8) ----------
-const MODEL_A = { id: 'com.acme.api-security', version: '1.2.0', publisher: 'acme.com', requirement_ids: ['1.1', '1.2', '2.1', 'AUTHZ-3'] };
-const MODEL_Z = { id: 'ai.zivis.agent-baseline', version: '2.0.0', publisher: 'zivis.ai', requirement_ids: ['1.1', 'B-2'] };
+const MODEL_A = {
+  id: 'com.acme.api-security', version: '1.2.0', publisher: 'acme.com',
+  requirements: [
+    { id: '1.1', title: 'Transport security', requirement: 'All service-to-service traffic MUST use mutual TLS.', required: true, blocking: true },
+    { id: '1.2', title: 'Rate limiting', requirement: 'Public endpoints MUST enforce per-client rate limits.', required: true, blocking: false },
+    { id: '2.1', title: 'Cardholder data', requirement: 'Stored cardholder data MUST be encrypted at rest.', required: true, blocking: false },
+    { id: 'AUTHZ-3', title: 'Object-level authorization', requirement: 'Every object read MUST verify caller ownership.', required: true, blocking: false },
+  ],
+};
+const MODEL_Z = {
+  id: 'ai.zivis.agent-baseline', version: '2.0.0', publisher: 'zivis.ai',
+  requirements: [
+    { id: '1.1', title: 'Tool allowlist', requirement: 'Agents MUST invoke only explicitly allowlisted tools.', required: true, blocking: true },
+    { id: 'B-2', title: 'Prompt-injection resistance', requirement: 'Untrusted content MUST NOT alter agent instructions.', required: true, blocking: false },
+  ],
+};
+MODEL_A.requirement_ids = MODEL_A.requirements.map((r) => r.id);
+MODEL_Z.requirement_ids = MODEL_Z.requirements.map((r) => r.id);
 
 const salts = (() => {
   let n = 0;
@@ -131,8 +176,10 @@ const outcomes = [
 const evaluations = [
   { salt: salts(), record: { model_id: MODEL_A.id, model_version: MODEL_A.version, requirement_id: '1.1', status: 'met', rationale: 'TLS termination and mTLS between services verified by config review and probe.', method: 'tested', evaluated_at: '2026-08-10T14:00:00Z', evidence_refs: ['ev_1'] } },
   { salt: salts(), record: { model_id: MODEL_A.id, model_version: MODEL_A.version, requirement_id: '1.2', status: 'partial', rationale: 'Rate limiting present on public routes; internal admin routes uncovered.', method: 'tested', evaluated_at: '2026-08-11T09:30:00Z', evidence_refs: ['ev_1', 'ev_2'] } },
-  { salt: salts(), record: { model_id: MODEL_A.id, model_version: MODEL_A.version, requirement_id: '2.1', status: 'not_applicable', rationale: 'No payment card data handled anywhere in scope; requirement scoped out.', method: 'document_review', evaluated_at: '2026-08-09T16:20:00Z' } },
-  { salt: salts(), record: { model_id: MODEL_A.id, model_version: MODEL_A.version, requirement_id: 'AUTHZ-3', status: 'not_evaluated', evaluated_at: '2026-08-09T16:21:00Z' } },
+  { salt: salts(), record: { model_id: MODEL_A.id, model_version: MODEL_A.version, requirement_id: '2.1', status: 'not_applicable', rationale: 'No payment card data handled anywhere in scope; requirement scoped out by the assessment charter.', method: 'document_review', evaluated_at: '2026-08-09T16:20:00Z', evidence_refs: [] } },
+  // §8.5: not_evaluated carries NO evaluated_at and NO method - there was no evaluation to timestamp.
+  // rationale is permitted, to say WHY it remains unevaluated.
+  { salt: salts(), record: { model_id: MODEL_A.id, model_version: MODEL_A.version, requirement_id: 'AUTHZ-3', status: 'not_evaluated', rationale: 'Deferred to the next assessment window; object-level authorization testing was out of time budget.' } },
   { salt: salts(), record: { model_id: MODEL_Z.id, model_version: MODEL_Z.version, requirement_id: '1.1', status: 'not_met', rationale: 'Agent tool allowlist absent; arbitrary tool invocation possible.', method: 'tested', evaluated_at: '2026-08-12T11:05:00Z', evidence_refs: ['ev_2'] } },
   { salt: salts(), record: { model_id: MODEL_Z.id, model_version: MODEL_Z.version, requirement_id: 'B-2', status: 'met', rationale: 'Prompt-injection canary suite passed across all 24 cases.', method: 'agent_test_run', evaluated_at: '2026-08-12T11:40:00Z', evidence_refs: ['ev_3'] } },
 ];
@@ -156,6 +203,15 @@ const outcomesRoot = hex(oTree.root);
 const evaluationsRoot = hex(eTree.root);
 const bundleRoot = hex(vTree.root);
 
+// ---------- §7.8 coverage — per ENTRY, derived from that entry's committed records ----------
+const DETERMINED = new Set(['met', 'partial', 'not_met', 'not_applicable']);
+function coverageFor(model) {
+  const recs = outcomes.filter((o) => o.record.framework_id === model.id);
+  const determined = recs.filter((o) => DETERMINED.has(o.record.status)).length;
+  const total = model.requirement_ids.length; // = Declared Set size; §8.4.1 makes this checkable
+  return { determined, total, pct: determined / total };
+}
+
 // ---------- The token (S1: publisher acme.com / zivis.ai, issuer zivis.ai) ----------
 const token = {
   zat_version: '0.3',
@@ -167,15 +223,21 @@ const token = {
   frameworks: [
     {
       id: MODEL_A.id, name: 'Acme API Security Standard', version: MODEL_A.version, version_scheme: 'semver',
-      basis: 'tested', definition_hash: definitionHash(MODEL_A.requirement_ids),
+      basis: 'tested',
+      definition_hash: definitionHash(MODEL_A.requirement_ids),
+      model_hash: modelHash(MODEL_A),
       definition_uri: 'https://trust.acme.com/models/com.acme.api-security/1.2.0',
-      assurance_result: 'indeterminate', // AUTHZ-3 (required, per the model) is not_evaluated → ZAM §8.1 rule 3
+      assurance_result: 'indeterminate', // AUTHZ-3 (required) is not_evaluated → ZAM §8.1 rule 3
+      coverage: coverageFor(MODEL_A),
     },
     {
       id: MODEL_Z.id, name: 'ZIVIS Agent Baseline', version: MODEL_Z.version, version_scheme: 'semver',
-      basis: 'tested', definition_hash: definitionHash(MODEL_Z.requirement_ids),
+      basis: 'tested',
+      definition_hash: definitionHash(MODEL_Z.requirement_ids),
+      model_hash: modelHash(MODEL_Z),
       definition_uri: 'https://trust.zivis.ai/models/ai.zivis.agent-baseline/2.0.0',
       assurance_result: 'not_satisfied', // 1.1 (required) is not_met → ZAM §8.1 rule 2
+      coverage: coverageFor(MODEL_Z),
     },
   ],
   claims: { outcomes_root: outcomesRoot, evaluations_root: evaluationsRoot, outcome_count: outcomes.length },
@@ -216,10 +278,15 @@ check('§8.6 projection: status agrees for every Requirement', outcomes.every((o
 const s6Outcome = { framework_id: MODEL_A.id, id: '1.2', status: 'met' }; // record says partial
 check('S6 divergent projection detected (met vs partial)', evalByKey.get(`${MODEL_A.id} 1.2`).status !== s6Outcome.status);
 
-// §11 bound rule holds
-const evalTimes = evaluations.map((e) => e.record.evaluated_at).sort();
+// §11 bound rule: the window bounds every record that CARRIES an evaluated_at.
+// not_evaluated records carry none (§8.5) and are correctly outside the bound — a window over
+// evaluations that never happened would be meaningless.
+const evalTimes = evaluations.map((e) => e.record.evaluated_at).filter(Boolean).sort();
 const win = token.methodology.assessment_window;
-check('§11 window bounds committed evaluated_at', win.start <= evalTimes[0] && win.end >= evalTimes[evalTimes.length - 1]);
+check('§11 window bounds every timestamped evaluation', win.start <= evalTimes[0] && win.end >= evalTimes[evalTimes.length - 1]);
+check('§11 untimestamped (not_evaluated) records are excluded from the bound, not defaulted',
+  evalTimes.length === evaluations.filter((e) => e.record.status !== 'not_evaluated').length &&
+  evalTimes.length < evaluations.length);
 
 // S7: freshness — evaluations ~90 days old, re-minted "today"; 30-day constraint must fail
 {
@@ -255,6 +322,56 @@ check('§11 window bounds committed evaluated_at', win.start <= evalTimes[0] && 
   check('S9 definition_hash reproduces under JSON.stringify construction', definitionHash(ids) === expected);
 }
 
+// S11 (§8.4.1): the committed population MUST BE the Declared Set — no omissions, no extras
+for (const m of [MODEL_A, MODEL_Z]) {
+  const committed = outcomes.filter((o) => o.record.framework_id === m.id).map((o) => o.record.id).sort();
+  const declared = [...m.requirement_ids].sort();
+  check(`S11 committed population == Declared Set [${m.id}]`, JSON.stringify(committed) === JSON.stringify(declared));
+}
+// S11 negative: dropping the one inconvenient Requirement is detectable against the resolved Declared Set
+{
+  const withheld = outcomes.filter((o) => !(o.record.framework_id === MODEL_Z.id && o.record.status === 'not_met'));
+  const committedZ = withheld.filter((o) => o.record.framework_id === MODEL_Z.id).map((o) => o.record.id).sort();
+  const tree = buildTree([...withheld].sort(outcomeOrder).map((o) => leafHash(Buffer.from(o.salt), o.record)));
+  check('S11 withholding a declared Requirement yields a VALID root (why the rule is needed)', hex(tree.root) !== outcomesRoot);
+  check('S11 ...but is DETECTED against the resolved Declared Set', JSON.stringify(committedZ) !== JSON.stringify([...MODEL_Z.requirement_ids].sort()));
+}
+
+// S12 (§8.5): conditional field rules
+{
+  const det = new Set(['met', 'partial', 'not_met', 'not_applicable']);
+  const determinations = evaluations.filter((e) => det.has(e.record.status));
+  const unevaluated = evaluations.filter((e) => e.record.status === 'not_evaluated');
+  check('S12 every determination carries evaluated_at + method + rationale + evidence_refs',
+    determinations.every((e) => e.record.evaluated_at && e.record.method && e.record.rationale && Array.isArray(e.record.evidence_refs)));
+  check('S12 not_evaluated carries NO evaluated_at and NO method',
+    unevaluated.length > 0 && unevaluated.every((e) => e.record.evaluated_at === undefined && e.record.method === undefined));
+  check('S12 not_evaluated MAY carry rationale (why it is unevaluated)', unevaluated.some((e) => !!e.record.rationale));
+}
+
+// S13 (§7.4.1): model_hash forks on a semantic change that definition_hash cannot see
+{
+  const relaxed = { ...MODEL_A, requirements: MODEL_A.requirements.map((r) => (r.id === '1.1' ? { ...r, required: false, blocking: false } : r)) };
+  const reworded = { ...MODEL_A, requirements: MODEL_A.requirements.map((r) => (r.id === '1.1' ? { ...r, requirement: 'Service-to-service traffic SHOULD consider mutual TLS.' } : r)) };
+  check('S13 relaxing required/blocking leaves definition_hash IDENTICAL (it is blind to meaning)',
+    definitionHash(relaxed.requirement_ids) === definitionHash(MODEL_A.requirement_ids));
+  check('S13 ...but FORKS model_hash', modelHash(relaxed) !== modelHash(MODEL_A));
+  check('S13 rewording MUST->SHOULD leaves definition_hash IDENTICAL',
+    definitionHash(reworded.requirement_ids) === definitionHash(MODEL_A.requirement_ids));
+  check('S13 ...but FORKS model_hash', modelHash(reworded) !== modelHash(MODEL_A));
+  check('S13 model_hash is stable for an unchanged model', modelHash({ ...MODEL_A }) === modelHash(MODEL_A));
+}
+
+// §7.8: coverage counts agree with the committed records and the Declared Set
+for (const m of [MODEL_A, MODEL_Z]) {
+  const c = coverageFor(m);
+  const recs = outcomes.filter((o) => o.record.framework_id === m.id);
+  check(`§7.8 coverage.total == Declared Set size [${m.id}]`, c.total === m.requirement_ids.length);
+  check(`§7.8 coverage.determined == committed determinations [${m.id}]`,
+    c.determined === recs.filter((o) => DETERMINED.has(o.record.status)).length);
+  check(`§7.8 coverage.pct == determined/total [${m.id}]`, Math.abs(c.pct - c.determined / c.total) < 1e-12);
+}
+
 // ---------- S10: ZAR response envelopes (structural vectors) ----------
 const zarRequest = {
   zar_version: '0.1', request_id: 'req_9001', nonce: 'n-8f2a11',
@@ -265,12 +382,16 @@ const zarRequest = {
   accepted_scoring_profiles: ['ai.zivis.z-score-1.0'],
 };
 const zarResponses = {
-  satisfied: { zar_version: '0.1', request_id: 'req_9001', nonce: 'n-8f2a11', responder: 'acme.com', responded_at: '2026-08-24T19:00:00Z', status: 'satisfied', attestation: { mark_id: token.mark_id, iss: token.iss, uri: token.evidence_manifest.uri } },
+  fulfilled: { zar_version: '0.1', request_id: 'req_9001', nonce: 'n-8f2a11', responder: 'acme.com', responded_at: '2026-08-24T19:00:00Z', status: 'fulfilled', attestation: { mark_id: token.mark_id, iss: token.iss, uri: token.evidence_manifest.uri } },
   partial: { zar_version: '0.1', request_id: 'req_9001', nonce: 'n-8f2a11', responder: 'acme.com', responded_at: '2026-08-24T19:00:00Z', status: 'partial', unmet_constraints: [{ constraint: 'freshness', detail: 'earliest committed evaluated_at exceeds max_age_days=30' }], attestation: { mark_id: token.mark_id, iss: token.iss, uri: token.evidence_manifest.uri } },
   refused: { zar_version: '0.1', request_id: 'req_9001', nonce: 'n-8f2a11', responder: 'acme.com', responded_at: '2026-08-24T19:00:00Z', status: 'refused' },
   unavailable: { zar_version: '0.1', request_id: 'req_9001', nonce: 'n-8f2a11', responder: 'acme.com', responded_at: '2026-08-24T19:00:00Z', status: 'unavailable' },
 };
 check('S10 four response statuses mutually distinguishable', new Set(Object.values(zarResponses).map((r) => r.status)).size === 4);
+check('S10 response status vocabulary is fulfilled/partial/refused/unavailable (never "satisfied")',
+  Object.values(zarResponses).every((r) => ['fulfilled', 'partial', 'refused', 'unavailable'].includes(r.status)));
+check('S10 "fulfilled" request coexists with "not_satisfied" subject — the words do not collide',
+  zarResponses.fulfilled.status === 'fulfilled' && token.frameworks.some((f) => f.assurance_result === 'not_satisfied'));
 check('S10 nonce echoed in every envelope', Object.values(zarResponses).every((r) => r.nonce === zarRequest.nonce));
 
 // ---------- Emit ----------

@@ -20,8 +20,14 @@
         "version_scheme": "semver",
         "basis": "tested",
         "definition_hash": "sha256:b3b8e80df3ce572f673c77924166449ccb8fa042b08abf02454d2e4d838eabd9",
+        "model_hash": "sha256:2269f8b16903486756e90ddab65ebe517be6362b6a89b4276b8277ec691cca0f",
         "definition_uri": "https://trust.acme.com/models/com.acme.api-security/1.2.0",
-        "assurance_result": "indeterminate"
+        "assurance_result": "indeterminate",
+        "coverage": {
+          "determined": 3,
+          "total": 4,
+          "pct": 0.75
+        }
       },
       {
         "id": "ai.zivis.agent-baseline",
@@ -30,13 +36,19 @@
         "version_scheme": "semver",
         "basis": "tested",
         "definition_hash": "sha256:ca20d9ac208e8e97b084b1a8f334f33c7848a277744d4bcb66f86e652195203b",
+        "model_hash": "sha256:ef25289e907f538b07333597eb5d5873184fcf97c8142536814a1f66c540c908",
         "definition_uri": "https://trust.zivis.ai/models/ai.zivis.agent-baseline/2.0.0",
-        "assurance_result": "not_satisfied"
+        "assurance_result": "not_satisfied",
+        "coverage": {
+          "determined": 2,
+          "total": 2,
+          "pct": 1
+        }
       }
     ],
     "claims": {
       "outcomes_root": "sha256:00194627baba2a86dc528e2c2f15f07a2a58b7b77d337a0ad373299c3065749d",
-      "evaluations_root": "sha256:bb7ac6192aeb8b50ce952302addaee1d173dc6f293dcd75cf0ec6ef39f730867",
+      "evaluations_root": "sha256:1d3773ebcdd1ce2fdcdace72c06d313ecce3197f1f78affebab9df50bbf0eaa2",
       "outcome_count": 6
     },
     "evidence_manifest": {
@@ -219,7 +231,7 @@
           },
           {
             "position": "right",
-            "hash": "sha256:b131b5aca61ae11726ad05565be8d5f40344baf03d84a5e35a3067d60778bb8c"
+            "hash": "sha256:c3d55a8426d3cbd8e896d2185e024b13b70a211b20ea8299bb91022612c53ac1"
           }
         ]
       },
@@ -249,7 +261,7 @@
           },
           {
             "position": "right",
-            "hash": "sha256:b131b5aca61ae11726ad05565be8d5f40344baf03d84a5e35a3067d60778bb8c"
+            "hash": "sha256:c3d55a8426d3cbd8e896d2185e024b13b70a211b20ea8299bb91022612c53ac1"
           }
         ]
       },
@@ -279,7 +291,7 @@
           },
           {
             "position": "right",
-            "hash": "sha256:b131b5aca61ae11726ad05565be8d5f40344baf03d84a5e35a3067d60778bb8c"
+            "hash": "sha256:c3d55a8426d3cbd8e896d2185e024b13b70a211b20ea8299bb91022612c53ac1"
           }
         ]
       },
@@ -310,7 +322,7 @@
           },
           {
             "position": "right",
-            "hash": "sha256:b131b5aca61ae11726ad05565be8d5f40344baf03d84a5e35a3067d60778bb8c"
+            "hash": "sha256:c3d55a8426d3cbd8e896d2185e024b13b70a211b20ea8299bb91022612c53ac1"
           }
         ]
       },
@@ -322,14 +334,15 @@
           "model_version": "1.2.0",
           "requirement_id": "2.1",
           "status": "not_applicable",
-          "rationale": "No payment card data handled anywhere in scope; requirement scoped out.",
+          "rationale": "No payment card data handled anywhere in scope; requirement scoped out by the assessment charter.",
           "method": "document_review",
-          "evaluated_at": "2026-08-09T16:20:00Z"
+          "evaluated_at": "2026-08-09T16:20:00Z",
+          "evidence_refs": []
         },
         "proof": [
           {
             "position": "right",
-            "hash": "sha256:2e3eeb6babc7856b784f63150ca43dcb5b0af0bfcfe2f691be1b443ae19b7f6a"
+            "hash": "sha256:e9a156ac16c9f0639a46cf0cb101a6dce05a9704346a5e633035be67f66b54ea"
           },
           {
             "position": "left",
@@ -345,12 +358,12 @@
           "model_version": "1.2.0",
           "requirement_id": "AUTHZ-3",
           "status": "not_evaluated",
-          "evaluated_at": "2026-08-09T16:21:00Z"
+          "rationale": "Deferred to the next assessment window; object-level authorization testing was out of time budget."
         },
         "proof": [
           {
             "position": "left",
-            "hash": "sha256:5a13cd2301f5dd100849881a26c28487dc40a20fa1a69cd45e387881237631c7"
+            "hash": "sha256:292a71572784c7a9e07fa7f5e7c9a6499b023e9e3d1b43fac9f5ef5603177d0c"
           },
           {
             "position": "left",
@@ -457,13 +470,13 @@
     ]
   },
   "zar_responses": {
-    "satisfied": {
+    "fulfilled": {
       "zar_version": "0.1",
       "request_id": "req_9001",
       "nonce": "n-8f2a11",
       "responder": "acme.com",
       "responded_at": "2026-08-24T19:00:00Z",
-      "status": "satisfied",
+      "status": "fulfilled",
       "attestation": {
         "mark_id": "ztm_01K5TESTVECTOR0000000000FX",
         "iss": "zivis.ai",
