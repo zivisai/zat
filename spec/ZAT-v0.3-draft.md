@@ -1,6 +1,6 @@
 # ZIVIS Attestation Token (ZAT) v0.3
 
-**Status:** DRAFT — not ratified. Pre-ratification draft for Jake's line-by-line review (ZTC precedent). Nothing here is published until reviewed; the published specification remains [ZAT v0.2](ZAT-v0.2.md).
+**Status:** DRAFT — **not ratified.** Published here so it can be read and reviewed, not because it is settled: nothing in this document is final, and implementers should not build against it expecting stability. **The published specification remains [ZAT v0.2](ZAT-v0.2.md)**, which is what every currently-issued token conforms to.
 **Version:** 0.3.0-draft
 **Last Updated:** 2026-08-24
 **Maintainer:** ZIVIS
