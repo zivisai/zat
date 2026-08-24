@@ -3,9 +3,9 @@
 **Profile identifier:** `ai.zivis.z-score-1.0`
 **Status:** Stable
 **Version:** 1.0
-**Last Updated:** 2026-08-17
+**Last Updated:** 2026-08-24 (`not_applicable` exclusion + coverage formula — see §12)
 **Maintainer:** ZIVIS
-**Applies to:** [ZAT v0.2](../spec/ZAT-v0.2.md) §8.2
+**Applies to:** [ZAT v0.2](../spec/ZAT-v0.2.md) §8.2 · [ZAT v0.3 draft](../spec/ZAT-v0.3-draft.md) §8.2
 **License:** CC BY 4.0
 
 ---
@@ -59,6 +59,7 @@ This profile populates every optional field in the ZAT `aggregate` block:
 | `met` | 1.0 |
 | `partial` | The continuous score produced by §9, in (0.0, 1.0) |
 | `not_met` | 0.0 |
+| `not_applicable` | **Excluded from the mean** — see §4.2 |
 | `not_evaluated` | **Excluded from the mean** — see §4.2 |
 
 ### 4.2 Inclusion and Exclusion
@@ -67,11 +68,11 @@ This profile populates every optional field in the ZAT `aggregate` block:
 score_raw = sum(CCS of included outcomes) / count(included outcomes)
 ```
 
-An outcome is **excluded** when it is genuinely inapplicable to the subject, or when the assessment did not measure it. Excluded outcomes leave the denominator entirely. They MUST NOT be scored 0.
+An outcome is **excluded** for one of two reasons, each with its own status: it is genuinely inapplicable to the subject (`not_applicable` — a reached scope judgment), or the assessment did not measure it (`not_evaluated` — the absence of a judgment). Both leave the score's denominator entirely. They MUST NOT be scored 0. The two are identical for the score mean and **different for coverage** (§8) — that difference is the point of carrying two statuses.
 
 > **This distinction is load-bearing.** Scoring an unmeasured outcome as 0 asserts that the subject *failed* it. Excluding it asserts that nothing was measured. Conflating the two silently penalizes subjects for the assessor's coverage gaps, and it is the most common way an otherwise-correct scoring implementation produces dishonest marks. An implementation that cannot represent exclusion cannot implement this profile.
 
-Every excluded outcome MUST appear in `mapped_outcomes` with `status: "not_evaluated"` and MUST be committed to `outcomes_root` like any other. Exclusion affects the mean, not the record.
+Every excluded outcome MUST appear in `mapped_outcomes` with its honest status — `not_applicable` for a recorded scope decision, `not_evaluated` for an unmeasured outcome — and MUST be committed to `outcomes_root` like any other. Exclusion affects the mean, not the record.
 
 When every outcome is excluded, `score_raw` is 0.0 and `coverage_pct` is 0.0. Issuers SHOULD omit `aggregate` entirely in that case rather than publish a meaningless zero.
 
@@ -125,10 +126,13 @@ tier_score = ((742 − 700) / 100) × 100 = 42.0
 ## 8. `coverage_pct`
 
 ```
-coverage_pct = count(included outcomes) / count(outcomes in the framework definition)
+coverage_pct = count(outcomes with status in {met, partial, not_met, not_applicable})
+             / count(outcomes in the framework definition)
 ```
 
-Range 0.0–1.0. The denominator is the full outcome set the framework declares — the same set that produces `frameworks[].definition_hash` (ZAT §7.4) — not the set the assessment happened to touch.
+Range 0.0–1.0. The numerator is every outcome that received a **determination** — including `not_applicable`, which is a reached scope judgment, not an absence of one. Only `not_evaluated` is outside it. The denominator is the full outcome set the framework declares — the same set that produces `frameworks[].definition_hash` (ZAT §7.4) — unconditional: no status removes anything from it.
+
+> **Changed 2026-08-24** (ZAT v0.3 item 6, ratified): the earlier formula reused §4's score-inclusion set as the coverage numerator, so an outcome that had genuinely been assessed as out of scope produced the same coverage as one nobody had looked at. Coverage is a statement about *determination*, and a scope decision is one.
 
 `coverage_pct` and `score_raw` MUST be read together. A score of 0.95 over 12% coverage is a narrower claim than 0.80 over 100%, and this profile does not fold coverage into the score. Presentation layers SHOULD display them adjacently.
 
@@ -160,7 +164,8 @@ An assessment of 20 framework outcomes:
 - 11 `met` → CCS 1.0 each
 - 3 `partial` → CCS 0.62, 0.55, 0.71
 - 4 `not_met` → CCS 0.0 each
-- 2 `not_evaluated` → excluded
+- 1 `not_applicable` → excluded from the mean; **counted as covered**
+- 1 `not_evaluated` → excluded from the mean; **not covered**
 
 ```
 included       = 11 + 3 + 4 = 18
@@ -170,7 +175,7 @@ score_display  = round(715.5555...)    = 716
 tier           = 2 (716 ∈ [700, 800))
 tier_label     = "Operational Trust"
 tier_score     = ((716 − 700) / 100) × 100 = 16.0
-coverage_pct   = 18 / 20               = 0.9
+coverage_pct   = 19 / 20               = 0.95
 ```
 
 Resulting `aggregate`:
@@ -184,11 +189,11 @@ Resulting `aggregate`:
   "tier": 2,
   "tier_label": "Operational Trust",
   "tier_score": 16.0,
-  "coverage_pct": 0.9
+  "coverage_pct": 0.95
 }
 ```
 
-Note what the two excluded outcomes did: they raised the score from `12.88 / 20 = 0.644` (tier 1) to `0.716` (tier 2), and `coverage_pct` is the field that discloses it. This is the intended behavior, and it is why coverage travels with the score.
+Note what the two excluded outcomes did: they raised the score from `12.88 / 20 = 0.644` (tier 1) to `0.716` (tier 2), and `coverage_pct` is the field that discloses it. This is the intended behavior, and it is why coverage travels with the score. Note also what separates the two excluded outcomes from each other: the `not_applicable` one counts as covered (someone looked, and scoped it out — a relying party can challenge that decision), the `not_evaluated` one does not (nobody looked). Under the pre-2026-08-24 formula both read as uncovered and the distinction was invisible.
 
 ---
 
@@ -197,13 +202,13 @@ Note what the two excluded outcomes did: they raised the score from `12.88 / 20 
 An implementation conforms to `ai.zivis.z-score-1.0` if:
 
 - [ ] `score_raw` is the mean CCS over included outcomes only (§4)
-- [ ] `not_evaluated` outcomes are excluded from the denominator, never scored 0 (§4.2)
-- [ ] Excluded outcomes still appear in `mapped_outcomes` and `outcomes_root` (§4.2)
+- [ ] `not_evaluated` and `not_applicable` outcomes are excluded from the score mean, never scored 0 (§4.2)
+- [ ] Excluded outcomes still appear in `mapped_outcomes`, under their honest status, and in `outcomes_root` (§4.2)
 - [ ] `score_display = round(score_raw × 1000)` (§5)
 - [ ] `tier` follows the §6 brackets, half-open except tier 3
 - [ ] `tier_label` is the §6 label for the computed tier, unmodified
 - [ ] `tier_score` follows §7 and is clamped to [0, 100]
-- [ ] `coverage_pct` uses the framework's declared outcome count as denominator (§8)
+- [ ] `coverage_pct` counts every determination — `met`, `partial`, `not_met`, `not_applicable` — over the framework's full declared outcome count (§8)
 - [ ] `partial` CCS follows §9 and lies strictly within (0.0, 1.0)
 
 ---
@@ -213,3 +218,4 @@ An implementation conforms to `ai.zivis.z-score-1.0` if:
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2026-08-17 | Extracted from ZAT v0.1 §8.1–8.2 as a named profile under ZAT v0.2 §8.2. Added explicit exclusion semantics (§4.2), LCS/LDS partial scoring (§9), and a worked example (§10). |
+| 1.0 (rev. 2026-08-24) | 2026-08-24 | `not_applicable` recognized as its own excluded status (ZAT v0.3 item 6, ratified): excluded from the score mean exactly as `not_evaluated` is — `score_raw` is bit-identical for any real assessment — but counted in `coverage_pct`'s numerator as a reached determination (§8 formula changed). Identifier deliberately kept at `1.0`: pre-launch iteration with zero external recomputations in existence (Jake's ruling, twice applied). This is the second functional edit to `coverage_pct` under this identifier; the first real external recomputation is the line at which a change cuts `1.1` instead. |
