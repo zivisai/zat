@@ -35,21 +35,15 @@ roots cover:
 
 | Outcome | Status |
 |---|---|
-| `GOVERN-1.1` | pass *(disclosed in the example set)* |
-| `MAP-2.3` | pass |
-| `MEASURE-2.11` | pass |
+| `GOVERN-1.1` | met *(disclosed in the example set)* |
+| `MAP-2.3` | met |
+| `MEASURE-2.11` | met |
 | `MEASURE-2.7` | partial, with a `notes` field naming an out-of-scope pipeline |
-| `MANAGE-4.1` | fail |
+| `MANAGE-4.1` | not_met |
 | `MANAGE-2.2` | not_evaluated |
 
-The `fail`, the `partial`, and the note are exactly the material §14 exists to keep
-out of a publishable token. `coverage_pct` in the token is `5/7`: the framework declares
-7 outcomes (`frameworks[].definition_hash` covers all 7, including `GOVERN-1.2`, which
-this set never scored); none is `not_applicable`, so the denominator stays 7; of the 6
-outcomes actually committed here, 5 (`GOVERN-1.1`, `MAP-2.3`, `MEASURE-2.11`,
-`MEASURE-2.7`, `MANAGE-4.1`) carry a `pass`/`partial`/`fail` determination, and the
-remaining 2 — `MANAGE-2.2` (explicitly `not_evaluated`) and `GOVERN-1.2` (never scored at
-all) — do not. See spec §8.3.1.
+The `not_met`, the `partial`, and the note are exactly the material §14 exists to keep
+out of a publishable token.
 
 ## v0.1 (superseded)
 

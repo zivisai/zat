@@ -8,7 +8,7 @@
       "salt": "b3V0XzAwMV9zYWx0X2V4YW1wbGU",
       "value": {
         "id": "GOVERN-1.1",
-        "status": "pass",
+        "status": "met",
         "confidence": 0.91,
         "evidence_refs": [
           "ev_2f1a",
@@ -22,11 +22,11 @@
         },
         {
           "position": "right",
-          "hash": "sha256:afa3283e779ce2bbb63edbc5857dbb5d33e68e2d7c0462be760c9b4be8c593c3"
+          "hash": "sha256:6afbd52ff94f49c0f905a3728c7c010416fc89f4dc2f5a5df8c02fda68bd1ef2"
         },
         {
           "position": "right",
-          "hash": "sha256:111f07679673c3780f2261138868ccdd678937f6ba194668b078bb99c2f8dc75"
+          "hash": "sha256:f1407b57bdae57b48079d3a1e09e0d4535902a2810716f604d6a763f39d4d2ae"
         }
       ]
     },
