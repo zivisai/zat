@@ -1,0 +1,509 @@
+{
+  "_meta": {
+    "description": "ZAT v0.3 draft test vectors — generated and self-verified by scripts/generate-zat-v03-test-vectors.mjs. Salts are fixed fixture salts; production salts MUST be fresh random per spec §8.4.",
+    "spec": "docs/specs/ZIVIS-FRAMEWORK-ATTESTATION-TOKEN-v0.3.md",
+    "scenarios": "S1 independent evaluator · S2 semver compatible · S3 publication no-semver · S4 outcome disclosure · S5 evaluation+evidence disclosure · S6 projection mismatch (negative) · S7 freshness vs re-mint · S8 duplicate ids across models · S9 historical definition_hash · S10 response envelope",
+    "generated_at": null
+  },
+  "token": {
+    "zat_version": "0.3",
+    "iss": "zivis.ai",
+    "sub": "system:acme-corp/checkout-api",
+    "mark_id": "ztm_01K5TESTVECTOR0000000000FX",
+    "issued_at": "2026-08-24T18:00:00Z",
+    "expires_at": "2026-11-22T18:00:00Z",
+    "frameworks": [
+      {
+        "id": "com.acme.api-security",
+        "name": "Acme API Security Standard",
+        "version": "1.2.0",
+        "version_scheme": "semver",
+        "basis": "tested",
+        "definition_hash": "sha256:b3b8e80df3ce572f673c77924166449ccb8fa042b08abf02454d2e4d838eabd9",
+        "definition_uri": "https://trust.acme.com/models/com.acme.api-security/1.2.0",
+        "assurance_result": "indeterminate"
+      },
+      {
+        "id": "ai.zivis.agent-baseline",
+        "name": "ZIVIS Agent Baseline",
+        "version": "2.0.0",
+        "version_scheme": "semver",
+        "basis": "tested",
+        "definition_hash": "sha256:ca20d9ac208e8e97b084b1a8f334f33c7848a277744d4bcb66f86e652195203b",
+        "definition_uri": "https://trust.zivis.ai/models/ai.zivis.agent-baseline/2.0.0",
+        "assurance_result": "not_satisfied"
+      }
+    ],
+    "claims": {
+      "outcomes_root": "sha256:00194627baba2a86dc528e2c2f15f07a2a58b7b77d337a0ad373299c3065749d",
+      "evaluations_root": "sha256:bb7ac6192aeb8b50ce952302addaee1d173dc6f293dcd75cf0ec6ef39f730867",
+      "outcome_count": 6
+    },
+    "evidence_manifest": {
+      "hash_alg": "sha-256",
+      "bundle_root": "sha256:82d3db9f99c06981cbffba68a8f73d538a38c0d1eac48ca23bc6dca76dc8c9aa",
+      "uri": "https://trust.zivis.ai/marks/ztm_01K5TESTVECTOR0000000000FX",
+      "evidence_count": 3
+    },
+    "methodology": {
+      "assessor_version": "fixture-1.0",
+      "evaluator": "human+agentic",
+      "assessment_window": {
+        "start": "2026-08-09T00:00:00Z",
+        "end": "2026-08-13T00:00:00Z"
+      }
+    }
+  },
+  "disclosure_set": {
+    "zat_version": "0.3",
+    "mark_id": "ztm_01K5TESTVECTOR0000000000FX",
+    "iss": "zivis.ai",
+    "disclosures": [
+      {
+        "kind": "outcome",
+        "salt": "zatv03fixsalt005A",
+        "value": {
+          "framework_id": "ai.zivis.agent-baseline",
+          "id": "1.1",
+          "status": "not_met",
+          "confidence": 0.88
+        },
+        "proof": [
+          {
+            "position": "right",
+            "hash": "sha256:2016827d880a07e8065f7d1d738329011b140103fa4ff4785571dec7c9209ccb"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:aed4a772b1def0c01edfaf94807253c336694444f2f08929e6b78a1f585e353f"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:293b7631053b717cc6bc53c91fa04191367ba5a9de88230d64220440c1328858"
+          }
+        ]
+      },
+      {
+        "kind": "outcome",
+        "salt": "zatv03fixsalt006A",
+        "value": {
+          "framework_id": "ai.zivis.agent-baseline",
+          "id": "B-2",
+          "status": "met",
+          "confidence": 0.75
+        },
+        "proof": [
+          {
+            "position": "left",
+            "hash": "sha256:c9d94d85dd210354b0667dac46b0f2b601e59a02a5202715f456571a3a27a5a6"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:aed4a772b1def0c01edfaf94807253c336694444f2f08929e6b78a1f585e353f"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:293b7631053b717cc6bc53c91fa04191367ba5a9de88230d64220440c1328858"
+          }
+        ]
+      },
+      {
+        "kind": "outcome",
+        "salt": "zatv03fixsalt001A",
+        "value": {
+          "framework_id": "com.acme.api-security",
+          "id": "1.1",
+          "status": "met",
+          "confidence": 0.92
+        },
+        "proof": [
+          {
+            "position": "right",
+            "hash": "sha256:c576909bb43dface3ee4edd9dfbe2c05333982d5cb15872d1c3ed876f3785119"
+          },
+          {
+            "position": "left",
+            "hash": "sha256:ff53239572e251c6c2c4909e0efb4374df543cbe7fe59800f7f280d93d1f50dd"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:293b7631053b717cc6bc53c91fa04191367ba5a9de88230d64220440c1328858"
+          }
+        ]
+      },
+      {
+        "kind": "outcome",
+        "salt": "zatv03fixsalt002A",
+        "value": {
+          "framework_id": "com.acme.api-security",
+          "id": "1.2",
+          "status": "partial",
+          "confidence": 0.6
+        },
+        "proof": [
+          {
+            "position": "left",
+            "hash": "sha256:6fcaede5f44f8fb7fa4a12ecd5cbb151f6dfa57719900c2c6ac060e454949157"
+          },
+          {
+            "position": "left",
+            "hash": "sha256:ff53239572e251c6c2c4909e0efb4374df543cbe7fe59800f7f280d93d1f50dd"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:293b7631053b717cc6bc53c91fa04191367ba5a9de88230d64220440c1328858"
+          }
+        ]
+      },
+      {
+        "kind": "outcome",
+        "salt": "zatv03fixsalt003A",
+        "value": {
+          "framework_id": "com.acme.api-security",
+          "id": "2.1",
+          "status": "not_applicable"
+        },
+        "proof": [
+          {
+            "position": "right",
+            "hash": "sha256:d2fad2cc94e83abdc891e0f0ff538664f964606996a215c547a26e27e33049b4"
+          },
+          {
+            "position": "left",
+            "hash": "sha256:b9920f9337c74f8b06888f5a214f8408dec63ac198ffd37cb42c1fd9a9ece144"
+          }
+        ]
+      },
+      {
+        "kind": "outcome",
+        "salt": "zatv03fixsalt004A",
+        "value": {
+          "framework_id": "com.acme.api-security",
+          "id": "AUTHZ-3",
+          "status": "not_evaluated"
+        },
+        "proof": [
+          {
+            "position": "left",
+            "hash": "sha256:99f40ff04a0e74ef960016334c5c5cc98bc502319b5c1a6f3603a8314f19822b"
+          },
+          {
+            "position": "left",
+            "hash": "sha256:b9920f9337c74f8b06888f5a214f8408dec63ac198ffd37cb42c1fd9a9ece144"
+          }
+        ]
+      },
+      {
+        "kind": "evaluation",
+        "salt": "zatv03fixsalt011A",
+        "value": {
+          "model_id": "ai.zivis.agent-baseline",
+          "model_version": "2.0.0",
+          "requirement_id": "1.1",
+          "status": "not_met",
+          "rationale": "Agent tool allowlist absent; arbitrary tool invocation possible.",
+          "method": "tested",
+          "evaluated_at": "2026-08-12T11:05:00Z",
+          "evidence_refs": [
+            "ev_2"
+          ]
+        },
+        "proof": [
+          {
+            "position": "right",
+            "hash": "sha256:51aa49e4cbba5053f7f472b3d940319a98e56b24702a3058724d63a03cdf914d"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:4b1b6f15038aa33ebf491911949d9b5a9d5dc41a212da7cfb7fc10ad6a0ea990"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:b131b5aca61ae11726ad05565be8d5f40344baf03d84a5e35a3067d60778bb8c"
+          }
+        ]
+      },
+      {
+        "kind": "evaluation",
+        "salt": "zatv03fixsalt012A",
+        "value": {
+          "model_id": "ai.zivis.agent-baseline",
+          "model_version": "2.0.0",
+          "requirement_id": "B-2",
+          "status": "met",
+          "rationale": "Prompt-injection canary suite passed across all 24 cases.",
+          "method": "agent_test_run",
+          "evaluated_at": "2026-08-12T11:40:00Z",
+          "evidence_refs": [
+            "ev_3"
+          ]
+        },
+        "proof": [
+          {
+            "position": "left",
+            "hash": "sha256:517b9a15a6f6694604f86c3de491b09c0da99ea8e8bbb469a7383f6ce0923c91"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:4b1b6f15038aa33ebf491911949d9b5a9d5dc41a212da7cfb7fc10ad6a0ea990"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:b131b5aca61ae11726ad05565be8d5f40344baf03d84a5e35a3067d60778bb8c"
+          }
+        ]
+      },
+      {
+        "kind": "evaluation",
+        "salt": "zatv03fixsalt007A",
+        "value": {
+          "model_id": "com.acme.api-security",
+          "model_version": "1.2.0",
+          "requirement_id": "1.1",
+          "status": "met",
+          "rationale": "TLS termination and mTLS between services verified by config review and probe.",
+          "method": "tested",
+          "evaluated_at": "2026-08-10T14:00:00Z",
+          "evidence_refs": [
+            "ev_1"
+          ]
+        },
+        "proof": [
+          {
+            "position": "right",
+            "hash": "sha256:36625b256054ef97b76a68c9be7b7252e3e7a6911a89cfc3415447f101eb8fd5"
+          },
+          {
+            "position": "left",
+            "hash": "sha256:da344adea418ac616f0c4d4eba9f4865f30128d71b02567adbd9fb73a3369643"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:b131b5aca61ae11726ad05565be8d5f40344baf03d84a5e35a3067d60778bb8c"
+          }
+        ]
+      },
+      {
+        "kind": "evaluation",
+        "salt": "zatv03fixsalt008A",
+        "value": {
+          "model_id": "com.acme.api-security",
+          "model_version": "1.2.0",
+          "requirement_id": "1.2",
+          "status": "partial",
+          "rationale": "Rate limiting present on public routes; internal admin routes uncovered.",
+          "method": "tested",
+          "evaluated_at": "2026-08-11T09:30:00Z",
+          "evidence_refs": [
+            "ev_1",
+            "ev_2"
+          ]
+        },
+        "proof": [
+          {
+            "position": "left",
+            "hash": "sha256:fe551f0c4432746ad2d4d550ec626fafbf059b49063a0bb3dfd0b39dd4bf0464"
+          },
+          {
+            "position": "left",
+            "hash": "sha256:da344adea418ac616f0c4d4eba9f4865f30128d71b02567adbd9fb73a3369643"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:b131b5aca61ae11726ad05565be8d5f40344baf03d84a5e35a3067d60778bb8c"
+          }
+        ]
+      },
+      {
+        "kind": "evaluation",
+        "salt": "zatv03fixsalt009A",
+        "value": {
+          "model_id": "com.acme.api-security",
+          "model_version": "1.2.0",
+          "requirement_id": "2.1",
+          "status": "not_applicable",
+          "rationale": "No payment card data handled anywhere in scope; requirement scoped out.",
+          "method": "document_review",
+          "evaluated_at": "2026-08-09T16:20:00Z"
+        },
+        "proof": [
+          {
+            "position": "right",
+            "hash": "sha256:2e3eeb6babc7856b784f63150ca43dcb5b0af0bfcfe2f691be1b443ae19b7f6a"
+          },
+          {
+            "position": "left",
+            "hash": "sha256:e1448905784d1ebb6e7d7dc356054179dbb28d7e49e57317ceedc6f7eba067b8"
+          }
+        ]
+      },
+      {
+        "kind": "evaluation",
+        "salt": "zatv03fixsalt010A",
+        "value": {
+          "model_id": "com.acme.api-security",
+          "model_version": "1.2.0",
+          "requirement_id": "AUTHZ-3",
+          "status": "not_evaluated",
+          "evaluated_at": "2026-08-09T16:21:00Z"
+        },
+        "proof": [
+          {
+            "position": "left",
+            "hash": "sha256:5a13cd2301f5dd100849881a26c28487dc40a20fa1a69cd45e387881237631c7"
+          },
+          {
+            "position": "left",
+            "hash": "sha256:e1448905784d1ebb6e7d7dc356054179dbb28d7e49e57317ceedc6f7eba067b8"
+          }
+        ]
+      },
+      {
+        "kind": "evidence_item",
+        "salt": "zatv03fixsalt013A",
+        "value": {
+          "id": "ev_1",
+          "type": "scan_result",
+          "hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "version": 1,
+          "collected_at": "2026-08-08T10:00:00Z"
+        },
+        "proof": [
+          {
+            "position": "right",
+            "hash": "sha256:e001e1de45a113ca0d2dd504b7147b6abb237761d6d1d0c95132ce8cbed75fa0"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:6765d424a6315a18dc673c7ea618fffc172fafc766e7c15a88bd73569d53a517"
+          }
+        ]
+      },
+      {
+        "kind": "evidence_item",
+        "salt": "zatv03fixsalt014A",
+        "value": {
+          "id": "ev_2",
+          "type": "pentest_finding",
+          "hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+          "version": 3,
+          "collected_at": "2026-08-10T15:30:00Z"
+        },
+        "proof": [
+          {
+            "position": "left",
+            "hash": "sha256:a47959a6bbcafe494a0522edf5af0b1a597ef6296089cc90592f72075918d39b"
+          },
+          {
+            "position": "right",
+            "hash": "sha256:6765d424a6315a18dc673c7ea618fffc172fafc766e7c15a88bd73569d53a517"
+          }
+        ]
+      },
+      {
+        "kind": "evidence_item",
+        "salt": "zatv03fixsalt015A",
+        "value": {
+          "id": "ev_3",
+          "type": "agent_test_run",
+          "hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+          "collected_at": "2026-08-12T11:39:00Z"
+        },
+        "proof": [
+          {
+            "position": "left",
+            "hash": "sha256:f5a010f15d42de3629874fef191863105c3fcc3ed8a2dbcfaabd9eb6a5da61d9"
+          }
+        ]
+      }
+    ]
+  },
+  "negative_vectors": {
+    "s6_projection_mismatch": {
+      "note": "This outcome value disagrees with the committed Evaluation Record for (com.acme.api-security, 1.2) — a verifier holding both MUST reject the token (§8.6). It also does not verify against outcomes_root (different bytes than the committed record).",
+      "outcome": {
+        "framework_id": "com.acme.api-security",
+        "id": "1.2",
+        "status": "met"
+      }
+    }
+  },
+  "zar_request": {
+    "zar_version": "0.1",
+    "request_id": "req_9001",
+    "nonce": "n-8f2a11",
+    "requester": {
+      "name": "BigBuyer Procurement",
+      "id": "com.bigbuyer.procurement"
+    },
+    "subject": "system:acme-corp/checkout-api",
+    "models": [
+      {
+        "model_id": "com.acme.api-security",
+        "version_constraint": {
+          "type": "compatible",
+          "version": "1.1.0"
+        },
+        "required": true
+      }
+    ],
+    "disclosure_depth": "outcomes",
+    "freshness": {
+      "max_age_days": 30
+    },
+    "purpose": "vendor onboarding",
+    "accepted_scoring_profiles": [
+      "ai.zivis.z-score-1.0"
+    ]
+  },
+  "zar_responses": {
+    "satisfied": {
+      "zar_version": "0.1",
+      "request_id": "req_9001",
+      "nonce": "n-8f2a11",
+      "responder": "acme.com",
+      "responded_at": "2026-08-24T19:00:00Z",
+      "status": "satisfied",
+      "attestation": {
+        "mark_id": "ztm_01K5TESTVECTOR0000000000FX",
+        "iss": "zivis.ai",
+        "uri": "https://trust.zivis.ai/marks/ztm_01K5TESTVECTOR0000000000FX"
+      }
+    },
+    "partial": {
+      "zar_version": "0.1",
+      "request_id": "req_9001",
+      "nonce": "n-8f2a11",
+      "responder": "acme.com",
+      "responded_at": "2026-08-24T19:00:00Z",
+      "status": "partial",
+      "unmet_constraints": [
+        {
+          "constraint": "freshness",
+          "detail": "earliest committed evaluated_at exceeds max_age_days=30"
+        }
+      ],
+      "attestation": {
+        "mark_id": "ztm_01K5TESTVECTOR0000000000FX",
+        "iss": "zivis.ai",
+        "uri": "https://trust.zivis.ai/marks/ztm_01K5TESTVECTOR0000000000FX"
+      }
+    },
+    "refused": {
+      "zar_version": "0.1",
+      "request_id": "req_9001",
+      "nonce": "n-8f2a11",
+      "responder": "acme.com",
+      "responded_at": "2026-08-24T19:00:00Z",
+      "status": "refused"
+    },
+    "unavailable": {
+      "zar_version": "0.1",
+      "request_id": "req_9001",
+      "nonce": "n-8f2a11",
+      "responder": "acme.com",
+      "responded_at": "2026-08-24T19:00:00Z",
+      "status": "unavailable"
+    }
+  }
+}
